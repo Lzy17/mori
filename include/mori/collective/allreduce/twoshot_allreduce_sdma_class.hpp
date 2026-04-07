@@ -83,6 +83,10 @@ class AllreduceSdma {
   // if false, user should directly use output_transit_buffer
   bool copy_output_to_user_;
 
+  // Per-chunk counters (device): non-zero blocks atomically signal reduce+wbl2 done
+  // before block 0 issues SDMA AllGather for that slice (grid-wide ordering).
+  unsigned int* pipeline_slice_done_d_;
+
   AllreduceSdma(const AllreduceSdma&) = delete;
   AllreduceSdma& operator=(const AllreduceSdma&) = delete;
 

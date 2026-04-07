@@ -71,7 +71,8 @@ AllreduceSdma<T>::AllreduceSdma(int myPe, int npes, size_t /*input_buffer_size*/
       async_total_count_(0),
       async_stream_(nullptr),
       async_start_time_(0.0),
-      copy_output_to_user_(copy_output_to_user) {
+      copy_output_to_user_(copy_output_to_user),
+      pipeline_slice_done_d_(nullptr) {
   // 1. Allocate SDMA completion flags
   size_t flagsSize = npes_ * sizeof(uint64_t);
   void* flags = shmem::ShmemMalloc(flagsSize);
@@ -106,6 +107,12 @@ AllreduceSdma<T>::AllreduceSdma(int myPe, int npes, size_t /*input_buffer_size*/
   printf("  Barrier: %zu bytes at %p\n", barrierSize, bMem);
   printf("  Output transit buffer: %.2f MB at %p\n",
          output_transit_buffer_size_ / (1024.0 * 1024.0), output_transit_buffer_);
+
+  hipError_t sd_err =
+      hipMalloc(&pipeline_slice_done_d_, kSdmaRsPipelineChunks * sizeof(unsigned int));
+  if (sd_err != hipSuccess || pipeline_slice_done_d_ == nullptr) {
+    throw std::runtime_error("Failed to allocate pipeline slice-done counters");
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -113,6 +120,10 @@ template <typename T>
 AllreduceSdma<T>::~AllreduceSdma() {
   if (async_in_progress_) {
     cancel_async();
+  }
+  if (pipeline_slice_done_d_) {
+    (void)hipFree(pipeline_slice_done_d_);
+    pipeline_slice_done_d_ = nullptr;
   }
   if (flags_) {
     printf("AllreduceSdma destroyed: PE %d\n", myPe_);
@@ -216,34 +227,47 @@ void AllreduceSdma<T>::copy_output_to_user(T* output, size_t total_count, hipStr
 template <typename T>
 bool AllreduceSdma<T>::operator()(T* input, T* output, size_t total_count, hipStream_t stream) {
   try {
-    // Step 1: SdmaReduceScatter — SDMA scatter + local reduce
+    // Sync path: phase-1 RS gather (1 block), then reduce + pipelined AllGather slices.
     constexpr int pack_size = packed_t<T>::P::size;
     int threads = 512;
     int packedPerRank = static_cast<int>(((total_count / npes_ + pack_size - 1) / pack_size));
     int blocks = std::min(max_blocks_, (packedPerRank + threads - 1) / threads);
     if (blocks < 1) blocks = 1;
 
-    SdmaReduceScatterKernel<T><<<blocks, threads, 0, stream>>>(
+    SdmaReduceScatterGatherKernel<T><<<1, threads, 0, stream>>>(
         myPe_, npes_, input, output_transit_buffer_obj_, flagsObj_, barrierPtr_, total_count);
 
     hipError_t err = hipGetLastError();
     if (err != hipSuccess) {
-      fprintf(stderr, "PE %d: SdmaReduceScatter launch failed: %s\n", myPe_,
+      fprintf(stderr, "PE %d: SdmaReduceScatterGather launch failed: %s\n", myPe_,
               hipGetErrorString(err));
       return false;
     }
 
-    // Step 2: AllGather via SDMA
-    AllGatherSdmaKernel<T><<<1, 512, 0, stream>>>(myPe_, npes_, output_transit_buffer_obj_,
-                                                  flagsObj_, barrierPtr_, total_count);
+    unsigned int* slice_done_counters = nullptr;
+    if (blocks > 1) {
+      hipError_t ms_err = hipMemsetAsync(pipeline_slice_done_d_, 0,
+                                         kSdmaRsPipelineChunks * sizeof(unsigned int), stream);
+      if (ms_err != hipSuccess) {
+        fprintf(stderr, "PE %d: pipeline slice-done memset failed: %s\n", myPe_,
+                hipGetErrorString(ms_err));
+        return false;
+      }
+      slice_done_counters = pipeline_slice_done_d_;
+    }
+
+    SdmaReduceAllgatherPipelineKernel<T><<<blocks, threads, 0, stream>>>(
+        myPe_, npes_, input, output_transit_buffer_obj_, flagsObj_, barrierPtr_, total_count,
+        slice_done_counters);
 
     err = hipGetLastError();
     if (err != hipSuccess) {
-      fprintf(stderr, "PE %d: AllGather launch failed: %s\n", myPe_, hipGetErrorString(err));
+      fprintf(stderr, "PE %d: SdmaReduceAllgatherPipeline launch failed: %s\n", myPe_,
+              hipGetErrorString(err));
       return false;
     }
 
-    // Step 3: Copy result to user buffer
+    // Copy result to user buffer
     if (copy_output_to_user_) {
       copy_output_to_user(output, total_count, stream);
     }

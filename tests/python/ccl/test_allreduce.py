@@ -509,6 +509,7 @@ def _test_gemm_overlap_comparison(
     gemm_k=_GEMM_K_DEFAULT,
 ):
     """SDMA (copy True/False) vs RCCL allreduce overlapped with torch.matmul."""
+    stages = 4
     stream_ar = torch.cuda.Stream(device=device)
     stream_gemm = torch.cuda.Stream(device=device)
     rccl_dtype = _RCCL_DTYPE_MAP.get(dtype, torch.float32)
@@ -531,11 +532,14 @@ def _test_gemm_overlap_comparison(
     ev_g_e = torch.cuda.Event(enable_timing=True)
     ov_s = torch.cuda.Event(enable_timing=True)
     ov_e = torch.cuda.Event(enable_timing=True)
+    gemm_done_events = [torch.cuda.Event() for _ in range(stages)]
 
     all_ok = True
 
     def bench_one(label, setup_verify_and_launch_ar):
-        """setup returns (ok, launch, prep, time_ar_with_wall).
+        """setup returns either:
+        - (ok, launch, prep, time_ar_with_wall)
+        - (ok, launch, prep, time_ar_with_wall, start_ar, wait_ar)
 
         prep runs each iteration before the timed section (untimed), e.g.
         inp/buffer fill_. launch is timed only: SDMA ar(...) or RCCL all_reduce.
@@ -544,11 +548,16 @@ def _test_gemm_overlap_comparison(
         """
         nonlocal all_ok
         setup_ret = setup_verify_and_launch_ar()
-        if len(setup_ret) != 4:
+        if len(setup_ret) == 4:
+            ok_c, launch_ar, prep_ar, time_ar_with_wall = setup_ret
+            start_ar = None
+            wait_ar = None
+        elif len(setup_ret) == 6:
+            ok_c, launch_ar, prep_ar, time_ar_with_wall, start_ar, wait_ar = setup_ret
+        else:
             raise TypeError(
-                f"{label}: setup must return (ok, launch, prep, time_ar_with_wall)"
+                f"{label}: setup must return 4 or 6 fields, got {len(setup_ret)}"
             )
-        ok_c, launch_ar, prep_ar, time_ar_with_wall = setup_ret
 
         ok_pe = torch.tensor([1 if ok_c else 0], dtype=torch.int32, device=device)
         dist.all_reduce(ok_pe, op=dist.ReduceOp.MIN)
@@ -566,15 +575,28 @@ def _test_gemm_overlap_comparison(
             torch.cuda.synchronize()
             prep_ar()
             torch.cuda.synchronize()
-            if time_ar_with_wall:
+            if start_ar is not None and wait_ar is not None:
                 t0 = time.perf_counter()
-                launch_ar()
+                ok_seq = True
+                for _ in range(stages):
+                    ok_seq = start_ar() and ok_seq
+                    ok_seq = (wait_ar() >= 0) and ok_seq
+                torch.cuda.synchronize()
+                t_ar = time.perf_counter() - t0
+                if not ok_seq:
+                    print(f"PE {rank}: {label} async stage failed in sequential AR loop")
+                    break
+            elif time_ar_with_wall:
+                t0 = time.perf_counter()
+                for _ in range(stages):
+                    launch_ar()
                 torch.cuda.synchronize()
                 t_ar = time.perf_counter() - t0
             else:
                 ev_ar_s.record(stream_ar)
                 with torch.cuda.stream(stream_ar):
-                    launch_ar()
+                    for _ in range(stages):
+                        launch_ar()
                 ev_ar_e.record(stream_ar)
                 stream_ar.synchronize()
                 t_ar = ev_ar_s.elapsed_time(ev_ar_e) / 1000.0
@@ -585,7 +607,9 @@ def _test_gemm_overlap_comparison(
             torch.cuda.synchronize()
             ev_g_s.record(stream_gemm)
             with torch.cuda.stream(stream_gemm):
-                C = _run_gemm()
+                C = None
+                for _ in range(stages):
+                    C = _run_gemm()
             ev_g_e.record(stream_gemm)
             stream_gemm.synchronize()
             t_g = ev_g_s.elapsed_time(ev_g_e) / 1000.0
@@ -599,14 +623,38 @@ def _test_gemm_overlap_comparison(
             prep_ar()
             torch.cuda.synchronize()
             ov_s.record()
-            ev_ar_s.record(stream_ar)
-            with torch.cuda.stream(stream_ar):
-                launch_ar()
-            ev_ar_e.record(stream_ar)
-            ev_g_s.record(stream_gemm)
-            with torch.cuda.stream(stream_gemm):
-                C = _run_gemm()
-            ev_g_e.record(stream_gemm)
+            C = None
+            overlap_ok = True
+            if start_ar is not None and wait_ar is not None:
+                # stage 0: GEMM0 done -> start AR0
+                with torch.cuda.stream(stream_gemm):
+                    C = _run_gemm()
+                    gemm_done_events[0].record(stream_gemm)
+                stream_ar.wait_event(gemm_done_events[0])
+                overlap_ok = start_ar()
+
+                # stage s>=1: while GEMMs runs on stream_gemm, wait previous AR on stream_ar.
+                for s in range(1, stages):
+                    with torch.cuda.stream(stream_gemm):
+                        C = _run_gemm()
+                        gemm_done_events[s].record(stream_gemm)
+                    overlap_ok = overlap_ok and (wait_ar() >= 0)
+                    stream_ar.wait_event(gemm_done_events[s])
+                    overlap_ok = start_ar() and overlap_ok
+
+                overlap_ok = overlap_ok and (wait_ar() >= 0)
+            else:
+                for s in range(stages):
+                    with torch.cuda.stream(stream_gemm):
+                        C = _run_gemm()
+                        gemm_done_events[s].record(stream_gemm)
+                    stream_ar.wait_event(gemm_done_events[s])
+                    with torch.cuda.stream(stream_ar):
+                        launch_ar()
+
+            if not overlap_ok:
+                print(f"PE {rank}: {label} async stage failed in overlap loop")
+                break
             stream_ar.synchronize()
             stream_gemm.synchronize()
             ov_e.record()
@@ -619,12 +667,19 @@ def _test_gemm_overlap_comparison(
 
         dist.barrier()
         _print_overlap_summary(
-            rank, npes, label, seq_ar, seq_gemm, overlap_times, data_bytes
+            rank,
+            npes,
+            f"{label}; stages={stages}",
+            seq_ar,
+            seq_gemm,
+            overlap_times,
+            data_bytes * stages,
         )
 
     if rank == 0:
         print(f"\n>>> Test 5: GEMM overlap (torch.matmul {gemm_m}x{gemm_k}x{gemm_n})")
-        print("    Compare SDMA allreduce vs RCCL with concurrent GEMM on another stream")
+        print("    Compare SDMA allreduce vs RCCL with staged GEMM->AllReduce pipeline")
+        print(f"    Stages: {stages}")
 
     torch.cuda.synchronize()
     dist.barrier()
@@ -643,7 +698,9 @@ def _test_gemm_overlap_comparison(
         out = torch.zeros(elems, dtype=dtype, device=device)
 
         stream_ar.synchronize()
-        ok = ar(inp, out, elems, stream_ar)
+        started = ar.start_async(inp, out, elems, stream_ar)
+        exec_time = ar.wait_async(stream_ar) if started else -1.0
+        ok = started and exec_time >= 0.0
         stream_ar.synchronize()
         ok = ok and _verify_allreduce_result(
             _to_numpy(out.cpu()), elems, my_pe, npes, "gemm_ov/sdma_copyT", dtype=dtype
@@ -655,9 +712,15 @@ def _test_gemm_overlap_comparison(
         def launch():
             return ar(inp, out, elems, stream_ar)
 
+        def start_async_stage():
+            return ar.start_async(inp, out, elems, stream_ar)
+
+        def wait_async_stage():
+            return ar.wait_async(stream_ar)
+
         if not ok and rank == 0:
             print("  SDMA copy=True pre-bench verification failed")
-        return ok, launch, prep, False
+        return ok, launch, prep, False, start_async_stage, wait_async_stage
 
     bench_one(
         f"SDMA allreduce copy_output_to_user=True ({dtype_name}; prep fill_ untimed)",
@@ -678,7 +741,9 @@ def _test_gemm_overlap_comparison(
         out = torch.zeros(elems, dtype=dtype, device=device)
 
         stream_ar.synchronize()
-        ok = ar(inp, out, elems, stream_ar)
+        started = ar.start_async(inp, out, elems, stream_ar)
+        exec_time = ar.wait_async(stream_ar) if started else -1.0
+        ok = started and exec_time >= 0.0
         stream_ar.synchronize()
         transit = ar.get_output_transit_buffer(dtype=inp.dtype)
         ok = ok and _verify_allreduce_result(
@@ -696,9 +761,15 @@ def _test_gemm_overlap_comparison(
         def launch():
             return ar(inp, out, elems, stream_ar)
 
+        def start_async_stage():
+            return ar.start_async(inp, out, elems, stream_ar)
+
+        def wait_async_stage():
+            return ar.wait_async(stream_ar)
+
         if not ok and rank == 0:
             print("  SDMA copy=False pre-bench verification failed")
-        return ok, launch, prep, False
+        return ok, launch, prep, False, start_async_stage, wait_async_stage
 
     bench_one(
         f"SDMA allreduce copy_output_to_user=False ({dtype_name}; prep fill_ untimed)",
