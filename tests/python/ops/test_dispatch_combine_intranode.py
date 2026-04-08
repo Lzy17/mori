@@ -29,6 +29,7 @@ from tests.python.ops.dispatch_combine_test_utils import (
     EpDispatchCombineTestCase,
     assert_worker_results,
     run_ep_dispatch_combine_test,
+    run_ep_dispatch_local_expert_count_test,
     start_torch_dist_process_manager,
 )
 
@@ -167,6 +168,65 @@ def test_dispatch_combine(
 
 
 # ---------------------------------------------------------------------------
+# local_expert_count tests (IntraNode only)
+# ---------------------------------------------------------------------------
+
+
+def _test_dispatch_local_expert_count(
+    rank,
+    world_size,
+    data_type,
+    hidden_dim,
+    max_num_inp_token_per_rank,
+    num_experts_per_rank,
+    num_experts_per_token,
+):
+    config = _make_intranode_config(
+        rank=rank,
+        world_size=world_size,
+        data_type=data_type,
+        hidden_dim=hidden_dim,
+        max_num_inp_token_per_rank=max_num_inp_token_per_rank,
+        num_experts_per_rank=num_experts_per_rank,
+        num_experts_per_token=num_experts_per_token,
+    )
+    run_ep_dispatch_local_expert_count_test(config)
+
+
+@pytest.mark.parametrize("world_size", (8,))
+@pytest.mark.parametrize("data_type", (torch.bfloat16,))
+@pytest.mark.parametrize("hidden_dim", (4096,))
+@pytest.mark.parametrize("max_num_inp_token_per_rank", (1, 32))
+@pytest.mark.parametrize("num_experts_per_rank", (32,))
+@pytest.mark.parametrize("num_experts_per_token", (8,))
+def test_dispatch_local_expert_count(
+    torch_dist_process_manager,
+    world_size,
+    data_type,
+    hidden_dim,
+    max_num_inp_token_per_rank,
+    num_experts_per_rank,
+    num_experts_per_token,
+):
+    for _ in range(world_size):
+        torch_dist_process_manager.task_queue.put(
+            (
+                _test_dispatch_local_expert_count,
+                [
+                    world_size,
+                    data_type,
+                    hidden_dim,
+                    max_num_inp_token_per_rank,
+                    num_experts_per_rank,
+                    num_experts_per_token,
+                ],
+            )
+        )
+
+    assert_worker_results(torch_dist_process_manager, world_size)
+
+
+# ---------------------------------------------------------------------------
 # maxTotalRecvTokens tests (IntraNode only)
 #
 # "spread" routing: each token sends 1 expert to every rank, so after per-rank
@@ -281,65 +341,3 @@ def test_dispatch_combine_max_total_recv_tokens_under_budget(
         )
 
     assert_worker_results(torch_dist_process_manager, world_size)
-
-
-# ---------------------------------------------------------------------------
-# Overflow assert test (IntraNode only, isolated subprocess)
-# ---------------------------------------------------------------------------
-
-
-# def _overflow_subprocess(rank, world_size, port):
-#     """Run in a spawned subprocess so the device assert doesn't poison the main test process."""
-#     from tests.python.utils import TorchDistContext
-
-#     with TorchDistContext(rank=rank, world_size=world_size, master_port=port):
-#         mori.shmem.shmem_torch_process_group_init("default")
-#         config = mori.ops.EpDispatchCombineConfig(
-#             data_type=torch.bfloat16,
-#             rank=rank,
-#             world_size=world_size,
-#             hidden_dim=4096,
-#             scale_dim=0,
-#             scale_type_size=1,
-#             max_token_type_size=4,
-#             max_num_inp_token_per_rank=32,
-#             num_experts_per_rank=32,
-#             num_experts_per_token=1,
-#             max_total_recv_tokens=64,  # per-PE limit = ceil(64/8) = 8
-#             block_num=40,
-#             warp_num_per_block=8,
-#             use_external_inp_buf=True,
-#             kernel_type=mori.ops.EpDispatchCombineKernelType.IntraNode,
-#         )
-#         op = mori.ops.EpDispatchCombineOp(config)
-#         test_case = EpDispatchCombineTestCase(config)
-#         # all_to_one: all tokens -> expert 0 (PE 0).
-#         # PE 0 receives 32 * 7 = 224 tokens but per-PE limit is 8 -> overflow.
-#         test_data = test_case.gen_test_data(
-#             use_max_token_num=True, routing="all_to_one"
-#         )
-#         (_, all_rank_indices, all_rank_input, all_rank_weights, all_rank_scales) = (
-#             test_data
-#         )
-#         op.dispatch(
-#             all_rank_input[rank],
-#             all_rank_weights[rank],
-#             all_rank_scales[rank],
-#             all_rank_indices[rank],
-#         )
-#         torch.cuda.synchronize()  # device assert surfaces here
-
-
-# def test_dispatch_combine_overflow_assert():
-#     """Verify per-PE overflow assert fires when routing exceeds maxTotalRecvTokens budget."""
-#     from tests.python.utils import get_free_port
-
-#     port = get_free_port()
-#     # spawn must raise due to device assert in at least one worker
-#     with pytest.raises(Exception):
-#         torch.multiprocessing.spawn(
-#             _overflow_subprocess,
-#             args=(8, port),
-#             nprocs=8,
-#             join=True,
-#         )

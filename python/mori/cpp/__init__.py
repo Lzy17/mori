@@ -46,3 +46,8 @@ sys.modules["libmori_pybinds"] = module
 spec.loader.exec_module(module)
 
 from libmori_pybinds import *
+
+# Replace the placeholder C++ binding (which would require KernelRegistry to be
+# pre-loaded) with the Python wrapper that self-contained JIT-compiles and
+# launches the kernel. Implementation lives in mori.ops.local_expert_count.
+from mori.ops.local_expert_count import launch_local_expert_count  # noqa: F811
