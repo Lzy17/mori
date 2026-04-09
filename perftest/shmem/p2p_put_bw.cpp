@@ -27,6 +27,7 @@
 #include <vector>
 
 #include "util.hpp"
+#include "device_utils.hpp"
 
 #include "hip/hip_runtime.h"
 #include "mori/application/utils/check.hpp"
@@ -41,48 +42,6 @@ namespace {
 constexpr int kDefaultQpId = 1;
 constexpr float kMsToS = 1000.0f;
 constexpr double kBToGb = 1e9;
-
-
-// NVSHMEM shmem_put_bw.cu: intra-block linear index; only !tid participates in cross-block atomics.
-__device__ inline int bw_tid() {
-  return threadIdx.x * blockDim.y * blockDim.z + threadIdx.y * blockDim.z + threadIdx.z;
-}
-
-// After each timed/warmup iteration: all blocks rendezvous; counter_d[1] becomes i+1.
-__device__ inline void bw_cross_block_barrier_round(volatile unsigned int* counter_d, int nblocks,
-                                                    int i) {
-  __syncthreads();
-  const int tid = bw_tid();
-  if (!tid) {
-    __threadfence();
-    unsigned int c = atomicInc((unsigned int*)counter_d, 0xffffffffu);
-    if (c == static_cast<unsigned int>(nblocks * (i + 1) - 1)) {
-      counter_d[1] += 1u;
-    }
-    while (counter_d[1] != static_cast<unsigned int>(i + 1)) {
-    }
-  }
-  __syncthreads();
-}
-
-// After main loop: last global round bumps phase, quiet, then every block leader quiet again.
-__device__ inline void bw_final_barrier_and_quiet(volatile unsigned int* counter_d, int nblocks,
-                                                  int iter) {
-  __syncthreads();
-  const int tid = bw_tid();
-  if (!tid) {
-    __threadfence();
-    unsigned int c = atomicInc((unsigned int*)counter_d, 0xffffffffu);
-    if (c == static_cast<unsigned int>(nblocks * (iter + 1) - 1)) {
-      ShmemQuietThread();
-      counter_d[1] += 1u;
-    }
-    while (counter_d[1] != static_cast<unsigned int>(iter + 1)) {
-    }
-    ShmemQuietThread();
-  }
-  __syncthreads();
-}
 
 __global__ void bw_block(double* data_d, volatile unsigned int* counter_d, size_t len, int pe,
                          int iter) {
@@ -146,28 +105,6 @@ __global__ void bw_thread(double* data_d, volatile unsigned int* counter_d, size
   bw_final_barrier_and_quiet(counter_d, nblocks, iter);
 }
 
-
-bool size_ok(PutScope scope, size_t len_doubles, int nblocks, int threads_per_block,
-             int device_warp_size) {
-  if (len_doubles == 0 || (len_doubles % static_cast<size_t>(nblocks)) != 0) {
-    return false;
-  }
-  size_t per_block = len_doubles / static_cast<size_t>(nblocks);
-  if (scope == PutScope::kThread) {
-    return per_block % static_cast<size_t>(threads_per_block) == 0;
-  }
-  if (scope == PutScope::kWarp) {
-    if (threads_per_block % device_warp_size != 0) {
-      return false;
-    }
-    int nw = threads_per_block / device_warp_size;
-    if (nw <= 0) {
-      return false;
-    }
-    return per_block % static_cast<size_t>(nw) == 0;
-  }
-  return true;
-}
 
 void launch_bw(PutScope scope, dim3 grid, dim3 block, double* data_d, unsigned int* counter_d,
                size_t len_doubles, int my_pe, int count) {
@@ -297,7 +234,7 @@ int main(int argc, char** argv) {
       continue;
     }
     size_t len_doubles = size_bytes / sizeof(double);
-    if (!size_ok(scope, len_doubles, args.nblocks, args.threads_per_block, device_warp_size)) {
+    if (!size_ok(scope, size_bytes, args.nblocks, args.threads_per_block, device_warp_size)) {
       if (my_pe == 0) {
         bandwidth_table.push_back(PerfTableRow{size_bytes, true, 0.0});
       }
