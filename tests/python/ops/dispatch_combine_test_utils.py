@@ -424,7 +424,7 @@ class EpDispatchCombineTestCase:
 
 
 def check_local_expert_count(op, dispatch_indices, dispatch_recv_num_token):
-    """Verify op._local_expert_count matches a CPU reference computed from dispatch outputs.
+    """Verify op.local_expert_count matches a CPU reference computed from dispatch outputs.
 
     For each of the ``total_recv`` received tokens, any expert index ``e`` that
     maps to the local rank (``e // num_experts_per_rank == rank``) contributes
@@ -439,7 +439,7 @@ def check_local_expert_count(op, dispatch_indices, dispatch_recv_num_token):
         for e in received_indices[tok_idx].tolist():
             if e // num_experts_per_rank == rank:
                 expected[e % num_experts_per_rank] += 1
-    actual = op._local_expert_count.cpu()
+    actual = op.local_expert_count.cpu()
     assert torch.equal(actual, expected), (
         f"Rank {rank}: local_expert_count mismatch:\n"
         f"  got:      {actual.tolist()}\n"
@@ -452,7 +452,7 @@ def run_ep_dispatch_local_expert_count_test(config):
 
     Handles both single-call kernels (IntraNode, InterNodeV1/LL) and the
     split-phase AsyncLL kernel (dispatch_send + dispatch_recv).  After the
-    kernel completes, verifies ``op._local_expert_count`` against a CPU
+    kernel completes, verifies ``op.local_expert_count`` against a CPU
     reference computed from the received indices.
     """
     op = mori.ops.EpDispatchCombineOp(config)

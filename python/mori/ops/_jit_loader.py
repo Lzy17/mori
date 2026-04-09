@@ -58,12 +58,17 @@ def ensure_compiled(hip_name: str) -> None:
         warnings.warn(f"[mori] JIT kernel compilation skipped for '{hip_name}': {e}")
 
 
-def load_hip_module(hip_name: str):
+def load_hip_module(hip_name: str, init_shmem: bool = True):
     """Load and initialise the HIP module for *hip_name*, cached in ``_loaded_modules``.
 
     Returns the cached ``HipModule`` on subsequent calls.
     Raises ``RuntimeError`` if the kernel has not been compiled yet
     (i.e. ``ensure_compiled`` must be called first).
+
+    Args:
+        init_shmem: If ``True``, call ``shmem_module_init`` after loading.
+            Set to ``False`` for kernels that do not use shared memory state
+            (e.g. ``local_expert_count``).
     """
     if hip_name in _loaded_modules:
         return _loaded_modules[hip_name]
@@ -79,6 +84,7 @@ def load_hip_module(hip_name: str):
     from mori.jit.hip_driver import HipModule
 
     mod = HipModule(hsaco)
-    sys.modules["libmori_pybinds"].shmem_module_init(mod._module.value)
+    if init_shmem:
+        sys.modules["libmori_pybinds"].shmem_module_init(mod._module.value)
     _loaded_modules[hip_name] = mod
     return mod

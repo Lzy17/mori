@@ -186,7 +186,7 @@ def _load_hip_modules(kernel_type):
 
     if kernel_type not in _KERNEL_TYPE_TO_HIP:
         raise ValueError(f"Unknown kernel_type: {kernel_type}")
-    return load_hip_module(_KERNEL_TYPE_TO_HIP[kernel_type])
+    return load_hip_module(_KERNEL_TYPE_TO_HIP[kernel_type], init_shmem=True)
 
 
 class EpDispatchCombineOp:
@@ -226,7 +226,7 @@ class EpDispatchCombineOp:
         self._dispatch_out_ptrs = mori_cpp.get_dispatch_output_ptrs(self._handle, True)
         self._combine_out_ptrs = mori_cpp.get_combine_output_ptrs(self._handle, True)
 
-        self._local_expert_count = torch.zeros(
+        self.local_expert_count = torch.zeros(
             config.num_experts_per_rank, dtype=torch.int32, device="cuda"
         )
 
@@ -464,7 +464,7 @@ class EpDispatchCombineOp:
         else:
             raise ValueError(f"Unsupported dispatch kernel_type: {kt}")
 
-        if call_local_expert_count:
+        if call_local_expert_count and kt != EpDispatchCombineKernelType.AsyncLL.value:
             from mori.ops.local_expert_count import launch_local_expert_count
 
             _, _, _, outI_ptr, total_ptr = self._dispatch_out_ptrs
@@ -472,7 +472,7 @@ class EpDispatchCombineOp:
                 self._cpp_config,
                 outI_ptr,
                 total_ptr,
-                self._local_expert_count.data_ptr(),
+                self.local_expert_count.data_ptr(),
                 stream=stream,
             )
 
@@ -568,7 +568,7 @@ class EpDispatchCombineOp:
                 self._cpp_config,
                 outI_ptr,
                 total_ptr,
-                self._local_expert_count.data_ptr(),
+                self.local_expert_count.data_ptr(),
                 stream=stream,
             )
 
