@@ -54,6 +54,40 @@ auto checkHsaError = [](hsa_status_t s, const char* msg, const char* file, int l
     }                                                                                          \
   } while (0)
 
+#if 0
+inline void checkHipError(hipError_t err, const char* msg, const char* file, int line)
+{
+   if (err != hipSuccess)
+   {
+      std::cerr << "HIP error at " << file << ":" << line << " — " << msg << "\n"
+                << "  Code: " << err << " (" << hipGetErrorString(err) << ")" << std::endl;
+      std::exit(EXIT_FAILURE);
+   }
+}
+
+#define CHECK_HIP_ERROR(cmd) checkHipError((cmd), #cmd, __FILE__, __LINE__)
+
+// Allow access to peerDeviceId from deviceId
+inline void EnablePeerAccess(int const deviceId, int const peerDeviceId)
+{
+   int canAccess;
+   CHECK_HIP_ERROR(hipDeviceCanAccessPeer(&canAccess, deviceId, peerDeviceId));
+   if (!canAccess)
+   {
+      std::cerr << "Unable to enable peer access from GPU devices " << deviceId << " to " << peerDeviceId << "\n";
+   }
+
+   CHECK_HIP_ERROR(hipSetDevice(deviceId));
+   hipError_t error = hipDeviceEnablePeerAccess(peerDeviceId, 0);
+   if (error != hipSuccess && error != hipErrorPeerAccessAlreadyEnabled)
+   {
+      std::cerr << "Unable to enable peer to peer access from " << deviceId << "  to " << peerDeviceId << " ("
+                << hipGetErrorString(error) << ")\n";
+   }
+}
+#endif
+
+
 // HSA agents
 std::vector<hsa_agent_t> cpuAgents_;
 std::vector<hsa_agent_t> gpuAgents_;
@@ -289,5 +323,7 @@ int AnvilLib::getSdmaEngineId(int srcDeviceId, int dstDeviceId) {
   // Use even engines only
   return mi300xOamMap[srcOamId][dstOamId] * 2;
 }
+
+AnvilLib& anvil = anvil.getInstance();
 
 }  // namespace anvil

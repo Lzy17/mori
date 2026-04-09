@@ -101,13 +101,6 @@ SymmMemObjPtr SymmMemManager::RegisterSymmMemObj(void* localPtr, size_t size, bo
   int worldSize = bootNet.GetWorldSize();
   int rank = bootNet.GetLocalRank();
 
-  int device = -1;
-  HIP_RUNTIME_CHECK(hipGetDevice(&device));
-
-  MORI_SHMEM_DEBUG("RegisterSymmMemObj: localPtr={:p} size={} heap_begin={} device={}", localPtr, size, heap_begin, device);
-  MORI_SHMEM_DEBUG("RegisterSymmMemObj: worldSize={} rank={} context={:p}", worldSize, rank, 
-          reinterpret_cast<void*>(&context));
-
   SymmMemObj* cpuMemObj = new SymmMemObj();
   cpuMemObj->localPtr = localPtr;
   cpuMemObj->size = size;
@@ -207,7 +200,7 @@ SymmMemObjPtr SymmMemManager::RegisterSymmMemObj(void* localPtr, size_t size, bo
 
     for (auto& dstDeviceId : dstDeviceIds) {
       for (size_t q = 0; q < numOfQueuesPerDevice; q++) {
-        auto* anvilHandle = anvil::AnvilLib::getInstance().getSdmaQueue(srcDeviceId, dstDeviceId, q)->deviceHandle();
+        auto* anvilHandle = anvil::anvil.getSdmaQueue(srcDeviceId, dstDeviceId, q)->deviceHandle();
         HIP_RUNTIME_CHECK(
             hipMemcpy(&gpuMemObj->deviceHandles_d[dstDeviceId * numOfQueuesPerDevice + q],
                       &anvilHandle, sizeof(anvilHandle), hipMemcpyHostToDevice));

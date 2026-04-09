@@ -110,6 +110,8 @@ class AnvilLib {
   std::unordered_map<uint64_t, std::vector<std::unique_ptr<SdmaQueue>>> sdma_channels_;
 };
 
+extern AnvilLib& anvil;
+
 inline void checkHipError(hipError_t err, const char* msg, const char* file, int line) {
   if (err != hipSuccess) {
     std::cerr << "HIP error at " << file << ":" << line << " — " << msg << "\n"
