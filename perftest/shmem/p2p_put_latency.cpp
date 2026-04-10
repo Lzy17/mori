@@ -20,27 +20,22 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-
 #include <mpi.h>
 
 #include <cstdio>
 #include <cstdlib>
 #include <vector>
 
-#include "util.hpp"
-
 #include "hip/hip_runtime.h"
 #include "mori/application/utils/check.hpp"
 #include "mori/shmem/shmem.hpp"
+#include "util.hpp"
 
 using namespace mori::application;
 using namespace mori::shmem;
 using namespace mori::perftest;
 
 namespace {
-
-constexpr int kDefaultQpId = 1;
-constexpr float kMsToUs = 1000.0f;
 
 __device__ inline int lat_tid() {
   return threadIdx.x * blockDim.y * blockDim.z + threadIdx.y * blockDim.z + threadIdx.z;
@@ -128,73 +123,28 @@ void launch_latency(PutScope scope, double* data_d, size_t len_doubles, int my_p
 
 int main(int argc, char** argv) {
 #ifndef MORI_WITH_MPI
-  std::fprintf(stderr,
-               "mori_shmem_put_latency requires MORI_WITH_MPI (enable WITH_MPI / BUILD_EXAMPLES).\n");
+  std::fprintf(
+      stderr,
+      "mori_shmem_put_latency requires MORI_WITH_MPI (enable WITH_MPI / BUILD_EXAMPLES).\n");
   return 1;
 #else
 
-  MPI_Init(&argc, &argv);
-  int mpi_world_rank = 0;
-  MPI_Comm_rank(MPI_COMM_WORLD, &mpi_world_rank);
-
-  PerfArgs args{};
-  const int parse_rc = ParseArgs(argc, argv, &args);
-  if (parse_rc != 0) {
-    if (mpi_world_rank == 0) {
-      PrintUsage(argv[0]);
-    }
-    MPI_Finalize();
-    return parse_rc == 2 ? 0 : 1;
+  PerfContext ctx{};
+  const int init_rc = PerfInit(argc, argv, &ctx);
+  if (init_rc != 0) {
+    return init_rc == 2 ? 0 : 1;
   }
 
-  if (args.min_size > args.max_size || args.step_factor < 2 || args.threads_per_block < 1) {
-    if (mpi_world_rank == 0) {
-      std::fprintf(stderr, "Invalid arguments.\n");
-    }
-    MPI_Finalize();
-    return 1;
-  }
+  PerfArgs& args = ctx.args;
+  const int my_pe = ctx.my_pe;
+  const int npes = ctx.npes;
+  const int device_warp_size = ctx.device_warp_size;
 
-  // double buffer: avoid silent skip on first sizes + match put_bw alignment
-  if (args.min_size % sizeof(double) != 0) {
-    args.min_size =
-        (args.min_size + sizeof(double) - 1) / sizeof(double) * sizeof(double);
-  }
-
-  MPI_Comm local_comm;
-  MPI_Comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, &local_comm);
-  int local_rank = 0;
-  MPI_Comm_rank(local_comm, &local_rank);
-
-  int device_count = 0;
-  HIP_RUNTIME_CHECK(hipGetDeviceCount(&device_count));
-  const int device_id = local_rank % device_count;
-  HIP_RUNTIME_CHECK(hipSetDevice(device_id));
-
-  int device_warp_size = 0;
-  HIP_RUNTIME_CHECK(
-      hipDeviceGetAttribute(&device_warp_size, hipDeviceAttributeWarpSize, device_id));
-
-  const int rc = ShmemMpiInit(MPI_COMM_WORLD);
-  if (rc != 0) {
-    std::fprintf(stderr, "ShmemMpiInit failed: %d\n", rc);
-    MPI_Comm_free(&local_comm);
-    int finalized = 0;
-    MPI_Finalized(&finalized);
-    if (!finalized) {
-      MPI_Finalize();
-    }
-    return 1;
-  }
-
-  const int my_pe = ShmemMyPe();
-  const int npes = ShmemNPes();
   if (npes != 2) {
     if (my_pe == 0) {
       std::fprintf(stderr, "mori_shmem_put_latency requires exactly 2 PEs (npes=%d)\n", npes);
     }
-    MPI_Comm_free(&local_comm);
-    ShmemFinalize();
+    PerfFinalize(&ctx);
     return 1;
   }
 
@@ -204,8 +154,7 @@ int main(int argc, char** argv) {
   void* symm = ShmemMalloc(args.max_size);
   if (!symm) {
     std::fprintf(stderr, "ShmemMalloc failed\n");
-    MPI_Comm_free(&local_comm);
-    ShmemFinalize();
+    PerfFinalize(&ctx);
     return 1;
   }
   double* data_d = static_cast<double*>(symm);
@@ -219,7 +168,6 @@ int main(int argc, char** argv) {
   }
 
   const PutScope phase = args.put_scope;
-
 
   ShmemBarrierAll();
   HIP_RUNTIME_CHECK(hipDeviceSynchronize());
@@ -286,8 +234,7 @@ int main(int argc, char** argv) {
     HIP_RUNTIME_CHECK(hipEventDestroy(stop));
   }
   ShmemFree(symm);
-  MPI_Comm_free(&local_comm);
-  ShmemFinalize();
+  PerfFinalize(&ctx);
   return 0;
 #endif
 }
