@@ -1,0 +1,39 @@
+# EP Inter-node benchmark - SUCCESSFUL RUN
+# Config: --num-qp 1, MORI_RDMA_DEVICES=ionic_0 (single NIC per node)
+# MORI_DISABLE_TOPO=1, GLOO_SOCKET_IFNAME=enp196s0
+# Node 0: 10.235.24.254, Node 1: 10.235.58.242
+# 2 nodes x 8 GPUs = 16 ranks, 4096 tokens/rank, bf16
+
+Dispatch Performance:
+  Best:    RDMA 4 GB/s, XGMI 14 GB/s, LL 17 GB/s, Latency 27075 us
+  Worst:   RDMA 4 GB/s, XGMI 13 GB/s, LL 16 GB/s, Latency 28224 us
+  Average: RDMA 4 GB/s, XGMI 13 GB/s, LL 16 GB/s, Latency 27459 us
+
+Combine Performance:
+  Best:    RDMA 4 GB/s, XGMI 14 GB/s, LL 17 GB/s, Latency 26091 us
+  Worst:   RDMA 4 GB/s, XGMI 14 GB/s, LL 17 GB/s, Latency 27036 us
+  Average: RDMA 4 GB/s, XGMI 14 GB/s, LL 17 GB/s, Latency 26711 us
+
+Round-by-round dispatch durations (us, per-rank):
+Round 0: avg 26937.62
+Round 1: avg 27527.00
+Round 2: avg 27409.19
+Round 3: avg 27488.69
+Round 4: avg 27362.94
+Round 5: avg 27428.62
+Round 6: avg 27515.56
+Round 7: avg 27445.38
+Round 8: avg 27540.19
+Round 9: avg 27417.75
+
+Round-by-round combine durations (us, per-rank):
+Round 0: avg 26746.06
+Round 1: avg 26716.88
+Round 2: avg 26717.31
+Round 3: avg 26692.12
+Round 4: avg 26721.94
+Round 5: avg 26666.25
+Round 6: avg 26765.50
+Round 7: avg 26674.81
+Round 8: avg 26715.56
+Round 9: avg 26731.88

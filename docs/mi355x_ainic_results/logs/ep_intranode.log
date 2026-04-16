@@ -1,0 +1,37 @@
+Running bench with max_tokens_per_rank: 4096, dispatch_dtype: bf16, combine_dtype: bf16, world_size(EP): 8, num_experts_per_rank: 32, num_experts_per_token: 8, zero_copy: true, quant_type: none, dispatch_block_num: None, dispatch_warp_per_block: None, combine_block_num: None, combine_warp_per_block: None
+------------------------------------------------------------
+[Gloo] Rank 0 is connected to 7 peer ranks. Expected number of connected peer ranks is : 7
+[Gloo] Rank 1 is connected to 7 peer ranks. Expected number of connected peer ranks is : 7
+[Gloo] Rank 2 is connected to 7 peer ranks. Expected number of connected peer ranks is : 7
+[Gloo] Rank 7 is connected to 7 peer ranks. Expected number of connected peer ranks is : 7
+[Gloo] Rank 3 is connected to 7 peer ranks. Expected number of connected peer ranks is : 7
+[Gloo] Rank 4 is connected to 7 peer ranks. Expected number of connected peer ranks is : 7
+[Gloo] Rank 6 is connected to 7 peer ranks. Expected number of connected peer ranks is : 7
+[Gloo] Rank 5 is connected to 7 peer ranks. Expected number of connected peer ranks is : 7
+
+============================================================
+Benchmarking with dispatch_block_num=80, dispatch_warp_per_block=16 combine_block_num=80, combine_warp_per_block=4
+============================================================
+Dispatch result:
+Round 0 duration(us) [869, 870, 874, 875, 870, 872, 880, 848] bandwidth(GB/s) [356, 358, 355, 354, 358, 358, 352, 365]avg bytes(MB) 296 bw 357.0 / 542.44
+Round 1 duration(us) [835, 838, 838, 841, 835, 835, 836, 834] bandwidth(GB/s) [369, 369, 372, 372, 370, 373, 371, 374]avg bytes(MB) 296 bw 371.25 / 564.09
+Round 2 duration(us) [840, 842, 841, 846, 844, 835, 841, 837] bandwidth(GB/s) [367, 366, 368, 367, 369, 371, 369, 371]avg bytes(MB) 296 bw 368.5 / 559.91
+Round 3 duration(us) [849, 849, 847, 846, 843, 841, 847, 844] bandwidth(GB/s) [365, 368, 363, 370, 367, 369, 366, 369]avg bytes(MB) 296 bw 367.125 / 557.82
+Round 4 duration(us) [849, 850, 851, 842, 847, 844, 850, 848] bandwidth(GB/s) [364, 366, 362, 366, 369, 370, 363, 367]avg bytes(MB) 296 bw 365.875 / 555.92
+Round 5 duration(us) [834, 834, 828, 833, 827, 827, 833, 831] bandwidth(GB/s) [371, 372, 375, 374, 375, 374, 373, 375]avg bytes(MB) 296 bw 373.625 / 567.70
+Round 6 duration(us) [831, 835, 829, 833, 832, 830, 835, 830] bandwidth(GB/s) [372, 370, 372, 373, 373, 371, 374, 375]avg bytes(MB) 296 bw 372.5 / 565.99
+Round 7 duration(us) [842, 842, 845, 849, 848, 844, 839, 839] bandwidth(GB/s) [369, 369, 367, 368, 366, 367, 375, 367]avg bytes(MB) 297 bw 368.5 / 559.91
+Round 8 duration(us) [836, 832, 833, 831, 838, 835, 840, 833] bandwidth(GB/s) [372, 373, 371, 372, 371, 374, 369, 373]avg bytes(MB) 296 bw 371.875 / 565.04
+Round 9 duration(us) [842, 842, 833, 837, 837, 838, 843, 840] bandwidth(GB/s) [366, 369, 372, 370, 371, 374, 370, 366]avg bytes(MB) 296 bw 369.75 / 561.81
+
+Combine result:
+Round 0 duration(us) [793, 787, 798, 798, 795, 786, 796, 782] bandwidth(GB/s) [391, 396, 390, 388, 391, 398, 389, 396]avg bytes(MB) 296 bw 392.375 / 596.19
+Round 1 duration(us) [785, 778, 783, 799, 790, 777, 784, 789] bandwidth(GB/s) [393, 398, 398, 391, 391, 401, 396, 395]avg bytes(MB) 296 bw 395.375 / 600.74
+Round 2 duration(us) [783, 779, 782, 781, 785, 789, 778, 773] bandwidth(GB/s) [394, 396, 396, 397, 397, 393, 399, 402]avg bytes(MB) 296 bw 396.75 / 602.83
+Round 3 duration(us) [791, 789, 788, 793, 782, 778, 780, 782] bandwidth(GB/s) [391, 396, 390, 395, 396, 399, 397, 399]avg bytes(MB) 296 bw 395.375 / 600.74
+Round 4 duration(us) [790, 785, 780, 785, 787, 776, 799, 790] bandwidth(GB/s) [391, 397, 395, 393, 397, 402, 387, 394]avg bytes(MB) 296 bw 394.5 / 599.41
+Round 5 duration(us) [787, 783, 778, 779, 785, 777, 786, 785] bandwidth(GB/s) [393, 396, 399, 400, 396, 398, 395, 397]avg bytes(MB) 296 bw 396.75 / 602.83
+Round 6 duration(us) [779, 783, 784, 792, 776, 781, 783, 779] bandwidth(GB/s) [397, 394, 394, 392, 400, 395, 399, 399]avg bytes(MB) 296 bw 396.25 / 602.07
+Round 7 duration(us) [786, 782, 785, 790, 782, 778, 783, 785] bandwidth(GB/s) [396, 397, 395, 395, 397, 399, 402, 393]avg bytes(MB) 297 bw 396.75 / 602.83
+Round 8 duration(us) [783, 793, 793, 779, 787, 789, 798, 792] bandwidth(GB/s) [397, 391, 390, 397, 395, 396, 389, 392]avg bytes(MB) 296 bw 393.375 / 597.70
+Round 9 duration(us) [798, 794, 784, 791, 778, 780, 785, 792] bandwidth(GB/s) [387, 391, 396, 392, 399, 402, 397, 388]avg bytes(MB) 296 bw 394.0 / 598.65

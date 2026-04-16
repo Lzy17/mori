@@ -1,0 +1,275 @@
+W0415 22:37:47.596000 4009074 torch/distributed/run.py:803] 
+W0415 22:37:47.596000 4009074 torch/distributed/run.py:803] *****************************************
+W0415 22:37:47.596000 4009074 torch/distributed/run.py:803] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0415 22:37:47.596000 4009074 torch/distributed/run.py:803] *****************************************
+[Gloo] Rank 4 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 36 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 21 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 9 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 14 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 23 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 22 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 27 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 35 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 37 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 0 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 40 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 1 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 2 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 3 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 5 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 6 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 7 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 8 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 17 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 10 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 11 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 26 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 29 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 34 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 12 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 15 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 16 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 19 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 28 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 24 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 25 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 32 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 33 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 30 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 13 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 18 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 20 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 31 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 38 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 53 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 51 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 43 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 44 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 57 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 56 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 45 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 48 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 60 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 50 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 39 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 41 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 54 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 49 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 55 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 59 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 42 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 58 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 52 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 47 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 63 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 62 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 46 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+[Gloo] Rank 61 is connected to 63 peer ranks. Expected number of connected peer ranks is : 63
+python: /sgl-workspace/mori/src/application/context/context.cpp:137: void mori::application::Context::InitializePossibleTransports(): Assertion `rankInNode < 8' failed.
+python: /sgl-workspace/mori/src/application/context/context.cpp:137: void mori::application::Context::InitializePossibleTransports(): Assertion `rankInNode < 8' failed.
+python: /sgl-workspace/mori/src/application/context/context.cpp:137: void mori::application::Context::InitializePossibleTransports(): Assertion `rankInNode < 8' failed.
+python: /sgl-workspace/mori/src/application/context/context.cpp:137: void mori::application::Context::InitializePossibleTransports(): Assertion `rankInNode < 8' failed.
+python: /sgl-workspace/mori/src/application/context/context.cpp:137: void mori::application::Context::InitializePossibleTransports(): Assertion `rankInNode < 8' failed.
+python: /sgl-workspace/mori/src/application/context/context.cpp:137: void mori::application::Context::InitializePossibleTransports(): Assertion `rankInNode < 8' failed.
+python: /sgl-workspace/mori/src/application/context/context.cpp:137: void mori::application::Context::InitializePossibleTransports(): Assertion `rankInNode < 8' failed.
+python: /sgl-workspace/mori/src/application/context/context.cpp:137: void mori::application::Context::InitializePossibleTransports(): Assertion `rankInNode < 8' failed.
+python: /sgl-workspace/mori/src/application/context/context.cpp:137: void mori::application::Context::InitializePossibleTransports(): Assertion `rankInNode < 8' failed.
+python: /sgl-workspace/mori/src/application/context/context.cpp:137: void mori::application::Context::InitializePossibleTransports(): Assertion `rankInNode < 8' failed.
+python: /sgl-workspace/mori/src/application/context/context.cpp:137: void mori::application::Context::InitializePossibleTransports(): Assertion `rankInNode < 8' failed.
+python: /sgl-workspace/mori/src/application/context/context.cpp:137: void mori::application::Context::InitializePossibleTransports(): Assertion `rankInNode < 8' failed.
+python: /sgl-workspace/mori/src/application/context/context.cpp:137: void mori::application::Context::InitializePossibleTransports(): Assertion `rankInNode < 8' failed.
+python: /sgl-workspace/mori/src/application/context/context.cpp:137: void mori::application::Context::InitializePossibleTransports(): Assertion `rankInNode < 8' failed.
+python: /sgl-workspace/mori/src/application/context/context.cpp:137: void mori::application::Context::InitializePossibleTransports(): Assertion `rankInNode < 8' failed.
+python: /sgl-workspace/mori/src/application/context/context.cpp:137: void mori::application::Context::InitializePossibleTransports(): Assertion `rankInNode < 8' failed.
+python: /sgl-workspace/mori/src/application/context/context.cpp:137: void mori::application::Context::InitializePossibleTransports(): Assertion `rankInNode < 8' failed.
+python: /sgl-workspace/mori/src/application/context/context.cpp:137: void mori::application::Context::InitializePossibleTransports(): Assertion `rankInNode < 8' failed.
+python: /sgl-workspace/mori/src/application/context/context.cpp:137: void mori::application::Context::InitializePossibleTransports(): Assertion `rankInNode < 8' failed.
+python: /sgl-workspace/mori/src/application/context/context.cpp:137: void mori::application::Context::InitializePossibleTransports(): Assertion `rankInNode < 8' failed.
+python: /sgl-workspace/mori/src/application/context/context.cpp:137: void mori::application::Context::InitializePossibleTransports(): Assertion `rankInNode < 8' failed.
+python: /sgl-workspace/mori/src/application/context/context.cpp:137: void mori::application::Context::InitializePossibleTransports(): Assertion `rankInNode < 8' failed.
+python: /sgl-workspace/mori/src/application/context/context.cpp:137: void mori::application::Context::InitializePossibleTransports(): Assertion `rankInNode < 8' failed.
+python: /sgl-workspace/mori/src/application/context/context.cpp:137: void mori::application::Context::InitializePossibleTransports(): Assertion `rankInNode < 8' failed.
+python: /sgl-workspace/mori/src/application/context/context.cpp:137: void mori::application::Context::InitializePossibleTransports(): Assertion `rankInNode < 8' failed.
+python: /sgl-workspace/mori/src/application/context/context.cpp:137: void mori::application::Context::InitializePossibleTransports(): Assertion `rankInNode < 8' failed.
+python: /sgl-workspace/mori/src/application/context/context.cpp:137: void mori::application::Context::InitializePossibleTransports(): Assertion `rankInNode < 8' failed.
+python: /sgl-workspace/mori/src/application/context/context.cpp:137: void mori::application::Context::InitializePossibleTransports(): Assertion `rankInNode < 8' failed.
+python: /sgl-workspace/mori/src/application/context/context.cpp:137: void mori::application::Context::InitializePossibleTransports(): Assertion `rankInNode < 8' failed.
+python: /sgl-workspace/mori/src/application/context/context.cpp:137: void mori::application::Context::InitializePossibleTransports(): Assertion `rankInNode < 8' failed.
+python: /sgl-workspace/mori/src/application/context/context.cpp:137: void mori::application::Context::InitializePossibleTransports(): Assertion `rankInNode < 8' failed.
+python: /sgl-workspace/mori/src/application/context/context.cpp:137: void mori::application::Context::InitializePossibleTransports(): Assertion `rankInNode < 8' failed.
+python: /sgl-workspace/mori/src/application/context/context.cpp:137: void mori::application::Context::InitializePossibleTransports(): Assertion `rankInNode < 8' failed.
+python: /sgl-workspace/mori/src/application/context/context.cpp:137: void mori::application::Context::InitializePossibleTransports(): Assertion `rankInNode < 8' failed.
+python: /sgl-workspace/mori/src/application/context/context.cpp:137: void mori::application::Context::InitializePossibleTransports(): Assertion `rankInNode < 8' failed.
+python: /sgl-workspace/mori/src/application/context/context.cpp:137: void mori::application::Context::InitializePossibleTransports(): Assertion `rankInNode < 8' failed.
+python: /sgl-workspace/mori/src/application/context/context.cpp:137: void mori::application::Context::InitializePossibleTransports(): Assertion `rankInNode < 8' failed.
+python: /sgl-workspace/mori/src/application/context/context.cpp:137: void mori::application::Context::InitializePossibleTransports(): Assertion `rankInNode < 8' failed.
+python: /sgl-workspace/mori/src/application/context/context.cpp:137: void mori::application::Context::InitializePossibleTransports(): Assertion `rankInNode < 8' failed.
+python: /sgl-workspace/mori/src/application/context/context.cpp:137: void mori::application::Context::InitializePossibleTransports(): Assertion `rankInNode < 8' failed.
+python: /sgl-workspace/mori/src/application/context/context.cpp:137: void mori::application::Context::InitializePossibleTransports(): Assertion `rankInNode < 8' failed.
+python: /sgl-workspace/mori/src/application/context/context.cpp:137: void mori::application::Context::InitializePossibleTransports(): Assertion `rankInNode < 8' failed.
+python: /sgl-workspace/mori/src/application/context/context.cpp:137: void mori::application::Context::InitializePossibleTransports(): Assertion `rankInNode < 8' failed.
+python: /sgl-workspace/mori/src/application/context/context.cpp:137: void mori::application::Context::InitializePossibleTransports(): Assertion `rankInNode < 8' failed.
+python: /sgl-workspace/mori/src/application/context/context.cpp:137: void mori::application::Context::InitializePossibleTransports(): Assertion `rankInNode < 8' failed.
+python: /sgl-workspace/mori/src/application/context/context.cpp:137: void mori::application::Context::InitializePossibleTransports(): Assertion `rankInNode < 8' failed.
+python: /sgl-workspace/mori/src/application/context/context.cpp:137: void mori::application::Context::InitializePossibleTransports(): Assertion `rankInNode < 8' failed.
+python: /sgl-workspace/mori/src/application/context/context.cpp:137: void mori::application::Context::InitializePossibleTransports(): Assertion `rankInNode < 8' failed.
+python: /sgl-workspace/mori/src/application/context/context.cpp:137: void mori::application::Context::InitializePossibleTransports(): Assertion `rankInNode < 8' failed.
+python: /sgl-workspace/mori/src/application/context/context.cpp:137: void mori::application::Context::InitializePossibleTransports(): Assertion `rankInNode < 8' failed.
+python: /sgl-workspace/mori/src/application/context/context.cpp:137: void mori::application::Context::InitializePossibleTransports(): Assertion `rankInNode < 8' failed.
+python: /sgl-workspace/mori/src/application/context/context.cpp:137: void mori::application::Context::InitializePossibleTransports(): Assertion `rankInNode < 8' failed.
+python: /sgl-workspace/mori/src/application/context/context.cpp:137: void mori::application::Context::InitializePossibleTransports(): Assertion `rankInNode < 8' failed.
+python: /sgl-workspace/mori/src/application/context/context.cpp:137: void mori::application::Context::InitializePossibleTransports(): Assertion `rankInNode < 8' failed.
+python: /sgl-workspace/mori/src/application/context/context.cpp:137: void mori::application::Context::InitializePossibleTransports(): Assertion `rankInNode < 8' failed.
+python: /sgl-workspace/mori/src/application/context/context.cpp:137: void mori::application::Context::InitializePossibleTransports(): Assertion `rankInNode < 8' failed.
+W0415 22:37:51.282000 4009173 torch/multiprocessing/spawn.py:169] Terminating process 4009186 via signal SIGTERM
+W0415 22:37:51.282000 4009173 torch/multiprocessing/spawn.py:169] Terminating process 4009187 via signal SIGTERM
+W0415 22:37:51.282000 4009175 torch/multiprocessing/spawn.py:169] Terminating process 4009215 via signal SIGTERM
+W0415 22:37:51.283000 4009173 torch/multiprocessing/spawn.py:169] Terminating process 4009188 via signal SIGTERM
+W0415 22:37:51.283000 4009173 torch/multiprocessing/spawn.py:169] Terminating process 4009190 via signal SIGTERM
+W0415 22:37:51.283000 4009175 torch/multiprocessing/spawn.py:169] Terminating process 4009221 via signal SIGTERM
+W0415 22:37:51.283000 4009173 torch/multiprocessing/spawn.py:169] Terminating process 4009192 via signal SIGTERM
+W0415 22:37:51.283000 4009175 torch/multiprocessing/spawn.py:169] Terminating process 4009226 via signal SIGTERM
+W0415 22:37:51.283000 4009173 torch/multiprocessing/spawn.py:169] Terminating process 4009194 via signal SIGTERM
+W0415 22:37:51.283000 4009175 torch/multiprocessing/spawn.py:169] Terminating process 4009230 via signal SIGTERM
+W0415 22:37:51.283000 4009173 torch/multiprocessing/spawn.py:169] Terminating process 4009196 via signal SIGTERM
+W0415 22:37:51.283000 4009175 torch/multiprocessing/spawn.py:169] Terminating process 4009234 via signal SIGTERM
+W0415 22:37:51.283000 4009175 torch/multiprocessing/spawn.py:169] Terminating process 4009238 via signal SIGTERM
+W0415 22:37:51.283000 4009175 torch/multiprocessing/spawn.py:169] Terminating process 4009245 via signal SIGTERM
+W0415 22:37:51.285000 4009170 torch/multiprocessing/spawn.py:169] Terminating process 4009213 via signal SIGTERM
+W0415 22:37:51.285000 4009174 torch/multiprocessing/spawn.py:169] Terminating process 4009210 via signal SIGTERM
+W0415 22:37:51.285000 4009170 torch/multiprocessing/spawn.py:169] Terminating process 4009219 via signal SIGTERM
+W0415 22:37:51.285000 4009174 torch/multiprocessing/spawn.py:169] Terminating process 4009222 via signal SIGTERM
+W0415 22:37:51.285000 4009170 torch/multiprocessing/spawn.py:169] Terminating process 4009224 via signal SIGTERM
+W0415 22:37:51.285000 4009170 torch/multiprocessing/spawn.py:169] Terminating process 4009229 via signal SIGTERM
+W0415 22:37:51.285000 4009174 torch/multiprocessing/spawn.py:169] Terminating process 4009228 via signal SIGTERM
+W0415 22:37:51.285000 4009170 torch/multiprocessing/spawn.py:169] Terminating process 4009233 via signal SIGTERM
+W0415 22:37:51.285000 4009174 torch/multiprocessing/spawn.py:169] Terminating process 4009235 via signal SIGTERM
+W0415 22:37:51.285000 4009170 torch/multiprocessing/spawn.py:169] Terminating process 4009239 via signal SIGTERM
+W0415 22:37:51.285000 4009174 torch/multiprocessing/spawn.py:169] Terminating process 4009240 via signal SIGTERM
+W0415 22:37:51.285000 4009170 torch/multiprocessing/spawn.py:169] Terminating process 4009243 via signal SIGTERM
+W0415 22:37:51.285000 4009174 torch/multiprocessing/spawn.py:169] Terminating process 4009246 via signal SIGTERM
+W0415 22:37:51.285000 4009174 torch/multiprocessing/spawn.py:169] Terminating process 4009247 via signal SIGTERM
+W0415 22:37:51.285000 4009171 torch/multiprocessing/spawn.py:169] Terminating process 4009211 via signal SIGTERM
+W0415 22:37:51.286000 4009171 torch/multiprocessing/spawn.py:169] Terminating process 4009218 via signal SIGTERM
+W0415 22:37:51.286000 4009171 torch/multiprocessing/spawn.py:169] Terminating process 4009227 via signal SIGTERM
+W0415 22:37:51.286000 4009171 torch/multiprocessing/spawn.py:169] Terminating process 4009232 via signal SIGTERM
+W0415 22:37:51.286000 4009171 torch/multiprocessing/spawn.py:169] Terminating process 4009236 via signal SIGTERM
+W0415 22:37:51.286000 4009171 torch/multiprocessing/spawn.py:169] Terminating process 4009241 via signal SIGTERM
+W0415 22:37:51.286000 4009171 torch/multiprocessing/spawn.py:169] Terminating process 4009244 via signal SIGTERM
+W0415 22:37:51.287000 4009172 torch/multiprocessing/spawn.py:169] Terminating process 4009193 via signal SIGTERM
+W0415 22:37:51.287000 4009172 torch/multiprocessing/spawn.py:169] Terminating process 4009195 via signal SIGTERM
+W0415 22:37:51.288000 4009172 torch/multiprocessing/spawn.py:169] Terminating process 4009198 via signal SIGTERM
+W0415 22:37:51.288000 4009172 torch/multiprocessing/spawn.py:169] Terminating process 4009200 via signal SIGTERM
+W0415 22:37:51.288000 4009172 torch/multiprocessing/spawn.py:169] Terminating process 4009204 via signal SIGTERM
+W0415 22:37:51.288000 4009172 torch/multiprocessing/spawn.py:169] Terminating process 4009209 via signal SIGTERM
+W0415 22:37:51.288000 4009172 torch/multiprocessing/spawn.py:169] Terminating process 4009216 via signal SIGTERM
+W0415 22:37:51.320000 4009169 torch/multiprocessing/spawn.py:169] Terminating process 4009199 via signal SIGTERM
+W0415 22:37:51.320000 4009169 torch/multiprocessing/spawn.py:169] Terminating process 4009203 via signal SIGTERM
+W0415 22:37:51.320000 4009169 torch/multiprocessing/spawn.py:169] Terminating process 4009207 via signal SIGTERM
+W0415 22:37:51.320000 4009169 torch/multiprocessing/spawn.py:169] Terminating process 4009214 via signal SIGTERM
+W0415 22:37:51.320000 4009169 torch/multiprocessing/spawn.py:169] Terminating process 4009220 via signal SIGTERM
+W0415 22:37:51.320000 4009169 torch/multiprocessing/spawn.py:169] Terminating process 4009225 via signal SIGTERM
+W0415 22:37:51.320000 4009169 torch/multiprocessing/spawn.py:169] Terminating process 4009231 via signal SIGTERM
+Traceback (most recent call last):
+  File "/sgl-workspace/mori/examples/ops/dispatch_combine/test_dispatch_combine_internode.py", line 1086, in <module>
+    torch.multiprocessing.spawn(
+  File "/opt/venv/lib/python3.10/site-packages/torch/multiprocessing/spawn.py", line 340, in spawn
+    return start_processes(fn, args, nprocs, join, daemon, start_method="spawn")
+  File "/opt/venv/lib/python3.10/site-packages/torch/multiprocessing/spawn.py", line 296, in start_processes
+    while not context.join():
+  File "/opt/venv/lib/python3.10/site-packages/torch/multiprocessing/spawn.py", line 196, in join
+    raise ProcessExitedException(
+torch.multiprocessing.spawn.ProcessExitedException: process 6 terminated with signal SIGABRT
+Traceback (most recent call last):
+  File "/sgl-workspace/mori/examples/ops/dispatch_combine/test_dispatch_combine_internode.py", line 1086, in <module>
+    torch.multiprocessing.spawn(
+  File "/opt/venv/lib/python3.10/site-packages/torch/multiprocessing/spawn.py", line 340, in spawn
+    return start_processes(fn, args, nprocs, join, daemon, start_method="spawn")
+  File "/opt/venv/lib/python3.10/site-packages/torch/multiprocessing/spawn.py", line 296, in start_processes
+    while not context.join():
+  File "/opt/venv/lib/python3.10/site-packages/torch/multiprocessing/spawn.py", line 196, in join
+    raise ProcessExitedException(
+torch.multiprocessing.spawn.ProcessExitedException: process 3 terminated with signal SIGABRT
+Traceback (most recent call last):
+  File "/sgl-workspace/mori/examples/ops/dispatch_combine/test_dispatch_combine_internode.py", line 1086, in <module>
+Traceback (most recent call last):
+  File "/sgl-workspace/mori/examples/ops/dispatch_combine/test_dispatch_combine_internode.py", line 1086, in <module>
+    torch.multiprocessing.spawn(
+  File "/opt/venv/lib/python3.10/site-packages/torch/multiprocessing/spawn.py", line 340, in spawn
+    torch.multiprocessing.spawn(
+  File "/opt/venv/lib/python3.10/site-packages/torch/multiprocessing/spawn.py", line 340, in spawn
+    return start_processes(fn, args, nprocs, join, daemon, start_method="spawn")
+  File "/opt/venv/lib/python3.10/site-packages/torch/multiprocessing/spawn.py", line 296, in start_processes
+    return start_processes(fn, args, nprocs, join, daemon, start_method="spawn")
+  File "/opt/venv/lib/python3.10/site-packages/torch/multiprocessing/spawn.py", line 296, in start_processes
+    while not context.join():
+  File "/opt/venv/lib/python3.10/site-packages/torch/multiprocessing/spawn.py", line 196, in join
+    while not context.join():
+  File "/opt/venv/lib/python3.10/site-packages/torch/multiprocessing/spawn.py", line 196, in join
+    raise ProcessExitedException(
+torch.multiprocessing.spawn.ProcessExitedException: process 1 terminated with signal SIGABRT
+    raise ProcessExitedException(
+torch.multiprocessing.spawn.ProcessExitedException: process 4 terminated with signal SIGABRT
+Traceback (most recent call last):
+  File "/sgl-workspace/mori/examples/ops/dispatch_combine/test_dispatch_combine_internode.py", line 1086, in <module>
+    torch.multiprocessing.spawn(
+  File "/opt/venv/lib/python3.10/site-packages/torch/multiprocessing/spawn.py", line 340, in spawn
+    return start_processes(fn, args, nprocs, join, daemon, start_method="spawn")
+  File "/opt/venv/lib/python3.10/site-packages/torch/multiprocessing/spawn.py", line 296, in start_processes
+    while not context.join():
+  File "/opt/venv/lib/python3.10/site-packages/torch/multiprocessing/spawn.py", line 196, in join
+    raise ProcessExitedException(
+torch.multiprocessing.spawn.ProcessExitedException: process 2 terminated with signal SIGABRT
+init process group done
+process group ok
+init process group done
+process group ok
+init process group done
+process group ok
+init process group done
+process group ok
+init process group done
+process group ok
+init process group done
+process group ok
+init process group done
+process group ok
+init process group done
+process group ok
+W0415 22:37:51.527000 4009074 torch/distributed/elastic/multiprocessing/api.py:906] Sending process 4009168 closing signal SIGTERM
+W0415 22:37:51.528000 4009074 torch/distributed/elastic/multiprocessing/api.py:906] Sending process 4009169 closing signal SIGTERM
+W0415 22:37:51.528000 4009074 torch/distributed/elastic/multiprocessing/api.py:906] Sending process 4009170 closing signal SIGTERM
+W0415 22:37:51.528000 4009074 torch/distributed/elastic/multiprocessing/api.py:906] Sending process 4009172 closing signal SIGTERM
+W0415 22:37:51.528000 4009074 torch/distributed/elastic/multiprocessing/api.py:906] Sending process 4009174 closing signal SIGTERM
+W0415 22:37:51.528000 4009074 torch/distributed/elastic/multiprocessing/api.py:906] Sending process 4009175 closing signal SIGTERM
+E0415 22:37:51.560000 4009074 torch/distributed/elastic/multiprocessing/api.py:880] failed (exitcode: 1) local_rank: 5 (pid: 4009173) of binary: /opt/venv/bin/python
+Traceback (most recent call last):
+  File "/opt/venv/bin/torchrun", line 33, in <module>
+    sys.exit(load_entry_point('torch==2.9.0a0+git7bcbafe', 'console_scripts', 'torchrun')())
+  File "/opt/venv/lib/python3.10/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 357, in wrapper
+    return f(*args, **kwargs)
+  File "/opt/venv/lib/python3.10/site-packages/torch/distributed/run.py", line 936, in main
+    run(args)
+  File "/opt/venv/lib/python3.10/site-packages/torch/distributed/run.py", line 927, in run
+    elastic_launch(
+  File "/opt/venv/lib/python3.10/site-packages/torch/distributed/launcher/api.py", line 151, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+  File "/opt/venv/lib/python3.10/site-packages/torch/distributed/launcher/api.py", line 288, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+examples/ops/dispatch_combine/test_dispatch_combine_internode.py FAILED
+------------------------------------------------------------
+Failures:
+  <NO_OTHER_FAILURES>
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2026-04-15_22:37:51
+  host      : smci355-ccs-aus-g12-06.cs-aus.dcgpu
+  rank      : 5 (local_rank: 5)
+  exitcode  : 1 (pid: 4009173)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+============================================================

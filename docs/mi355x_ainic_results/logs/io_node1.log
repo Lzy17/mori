@@ -1,0 +1,29 @@
+[2026-04-15 23:15:38.819] [30477] [io] [info] Set MORI-IO log level to info
+[Gloo] Rank 1 is connected to 1 peer ranks. Expected number of connected peer ranks is : 1
+[2026-04-15 23:15:39.975] [30477] [io] [info] Create engine key TARGET-0 node_id smci355-ccs-aus-g12-14 hostname smci355-ccs-aus-g12-14
+[2026-04-15 23:15:40.009] [30477] [io] [info] RdmaBackend created with config: qpPerTransfer[1] postBatchSize[-1] numWorkerThreads[1] enableNotification[1] maxSendWr[0] maxCqeNum[0] maxMsgSge[0]
+[2026-04-15 23:15:40.009] [30477] [io] [info] XGMI probe succeeded: P2P is available between GPU 0 and 1
+[2026-04-15 23:15:40.009] [30477] [io] [info] XgmiBackend created with config: numStreams[64] numEvents[64] node_id: smci355-ccs-aus-g12-14 hostname: smci355-ccs-aus-g12-14
+[2026-04-15 23:15:40.009] [30477] [io] [info] Auto-created XGMI backend after RDMA initialization
+[2026-04-15 23:15:40.009] [30477] [io] [info] Create backend type 2
+[2026-04-15 23:15:40.010] [30477] [io] [info] Register remote engine INITIATOR-0 node_id smci355-ccs-aus-g12-06 hostname smci355-ccs-aus-g12-06
+MORI-IO Benchmark Configurations:
+  backend: RDMA
+  op_type: read
+  host: 10.235.58.242
+  port: 35341
+  node_rank: 1
+  role: EngineRole.TARGET
+  role_rank: 0
+  num_initiator_dev: 1
+  num_target_dev: 1
+  num_qp_per_transfer: 1
+  num_worker_threads: 1
+  poll_cq_mode: PollCqMode.POLLING
+  buffer_size: 1048576 B
+  transfer_batch_size: 256
+  enable_batch_transfer: True
+  batch_non_contiguous: False
+  enable_sess: True
+  iters: 128
+

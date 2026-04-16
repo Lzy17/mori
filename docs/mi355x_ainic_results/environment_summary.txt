@@ -1,0 +1,47 @@
+Environment Summary — MORI Benchmark Reproduction
+===================================================
+Timestamp: 2026-04-15
+Hostname: smci355-ccs-aus-g12-06
+Docker Image: rocm/sgl-dev:v0.5.10rc0-rocm700-mi35x-20260331
+Container: mori_bench
+
+Git SHA (installed mori): 13ec475c (Chore: Disable building bitcode by default)
+Git SHA (mounted latest): 241461c0 (Fix: profile mode for JIT kernel #265)
+Using installed mori at: /sgl-workspace/mori
+
+ROCm Version: 7.0.0
+PyTorch Version: 2.9.0a0+git7bcbafe
+HIP Version: 7.0.51831-a3e329ad8
+Python Version: 3.10.12
+OS: Ubuntu 22.04.5 LTS
+
+GPU Model: AMD Instinct MI355X
+GPU Count: 8
+GPU Device ID: 0x75a3
+
+NIC Type: AINIC (Pollara / ionic)
+RDMA Devices (9 total):
+  ionic_0 -> enp9s0   (172.1.1.0/31,   MTU 9144)
+  ionic_1 -> enp25s0  (172.225.1.0/31, MTU 9144)
+  ionic_2 -> enp105s0 (172.161.1.0/31, MTU 9144)
+  ionic_3 -> enp121s0 (172.193.1.0/31, MTU 9144)
+  ionic_4 -> enp137s0 (172.129.1.0/31, MTU 9144)
+  ionic_5 -> enp153s0 (172.97.1.0/31,  MTU 9144)
+  ionic_6 -> enp196s0 (10.235.24.254/22, MTU 1500) <-- management NIC
+  ionic_7 -> enp233s0 (172.33.1.0/31,  MTU 9144)
+  ionic_8 -> enp249s0 (172.65.1.0/31,  MTU 9144)
+
+All RDMA devices: PORT_ACTIVE, link_layer=Ethernet (RoCE)
+
+Management / TCP bootstrap interface:
+  enp196s0 (10.235.24.254) - default route, MTU 1500
+  -> GLOO_SOCKET_IFNAME=enp196s0
+
+For MORI_RDMA_DEVICES:
+  ionic_6 is the management NIC (MTU 1500) - should be EXCLUDED from RDMA data path
+  Data NICs: ionic_0 through ionic_5, ionic_7, ionic_8 (all MTU 9144)
+  -> MORI_RDMA_DEVICES=^ionic_6  (exclude management NIC)
+
+Key differences from MORI docs:
+  Doc assumes: GLOO_SOCKET_IFNAME=ens14np0, MORI_RDMA_DEVICES=^mlx5_0,mlx5_1
+  This node:   GLOO_SOCKET_IFNAME=enp196s0, MORI_RDMA_DEVICES=^ionic_6

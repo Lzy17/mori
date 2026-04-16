@@ -20,15 +20,17 @@ python3 tests/python/ops/bench_dispatch_combine.py
 
 ## Inter-node
 
-Run the following command on each node and replace `node_rank` with its actual rank. `master_addr` should be the IP of the rank 0 node. `GLOO_SOCKET_IFNAME` should be set to the TCP socket interface you want to use.
+Run the following command on each node and replace `node_rank` with its actual rank. `master_addr` should be the IP of the rank 0 node. `GLOO_SOCKET_IFNAME` should be set to the TCP socket interface you want to use (find it with `ip route get 8.8.8.8`).
+
+> **Note:** The script internally spawns `gpu_per_node` (default 8) processes via `torch.multiprocessing.spawn`, so set `--nproc_per_node=1` in the torchrun command.
 
 ```bash
 export GLOO_SOCKET_IFNAME=ens14np0
 export MORI_RDMA_DEVICES=^mlx5_0,mlx5_1  # Optional: use `^` prefix to exclude specified devices
 
-torchrun --nnodes=2 --node_rank=0 --nproc_per_node=8 \
+torchrun --nnodes=2 --node_rank=0 --nproc_per_node=1 \
     --master_addr="10.194.129.65" --master_port=1234 \
-    examples/ops/dispatch_combine/test_dispatch_combine_internode.py --bench
+    examples/ops/dispatch_combine/test_dispatch_combine_internode.py --cmd bench
 ```
 
 The output includes total number of tokens received, total number of RDMA tokens received, and total bandwidth (XGMI + RDMA combined). To calculate RDMA-only bandwidth:
@@ -44,6 +46,25 @@ For RoCE networks, you can specify which RDMA devices to use with the `MORI_RDMA
 - **Include specific devices**: `MORI_RDMA_DEVICES=mlx5_0,mlx5_1`
 - **Exclude devices**: `MORI_RDMA_DEVICES=^mlx5_2,mlx5_3` (use `^` prefix to exclude specified devices)
 - **Default**: If not set, all available RDMA devices will be used
+
+Supported NIC vendors: Mellanox (`mlx5_*`), Broadcom (`bnxt_*`), Pensando/AINIC (`ionic_*`).
+
+**Discovering your RDMA devices:**
+
+```bash
+# List RDMA devices and their state
+ibv_devinfo | grep -E "hca_id|state"
+
+# Map RDMA device to network interface
+for dev in /sys/class/infiniband/*; do
+    echo "$(basename $dev) -> $(ls $dev/device/net/ 2>/dev/null)"
+done
+
+# Find the management interface for GLOO_SOCKET_IFNAME
+ip route get 8.8.8.8
+```
+
+**Topology detection:** For non-Mellanox NICs where GPU-NIC topology detection is not supported, set `MORI_DISABLE_TOPO=1` to use static round-robin NIC assignment.
 
 ## Bandwidth Computation
 
@@ -375,7 +396,7 @@ Run on each node, substituting `node_rank` and `master_addr` as in the [Inter-no
 export GLOO_SOCKET_IFNAME=ens14np0
 export MORI_RDMA_DEVICES=^mlx5_0,mlx5_1  # optional
 
-torchrun --nnodes=2 --node_rank=0 --nproc_per_node=8 \
+torchrun --nnodes=2 --node_rank=0 --nproc_per_node=1 \
     --master_addr="10.194.129.65" --master_port=1234 \
     examples/ops/dispatch_combine/test_dispatch_combine_internode.py \
     --cmd profile --kernel-type v1

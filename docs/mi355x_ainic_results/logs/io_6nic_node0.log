@@ -1,0 +1,27 @@
+# MORI-IO 6-NIC RDMA Read Benchmark Results
+# Config: 6 initiator + 6 target devices, session enabled, batch transfer (256)
+# NICs: ionic_0,ionic_1,ionic_4,ionic_5,ionic_7,ionic_8
+# Node 0: 10.235.24.254 (INITIATOR), Node 1: 10.235.58.242 (TARGET)
+
+## Per-NIC Peak BW (GB/s) at 1MB msg size:
+# Rank 0 (ionic_0): 28.30 max, 28.24 avg
+# Rank 1 (ionic_1): 28.65 max, 28.58 avg
+# Rank 2 (ionic_4): 17.74 max, 17.48 avg
+# Rank 3 (ionic_5): 17.74 max, 17.49 avg
+# Rank 4 (ionic_7): 18.65 max, 18.60 avg
+# Rank 5 (ionic_8): 18.89 max, 18.87 avg
+
+## Aggregate Peak BW (sum of 6 NICs at 1MB):
+# Max: 28.30 + 28.65 + 17.74 + 17.74 + 18.65 + 18.89 = 129.97 GB/s
+# Avg: 28.24 + 28.58 + 17.48 + 17.49 + 18.60 + 18.87 = 129.26 GB/s
+
+## Per-NIC Peak BW at 524KB (saturation point):
+# Rank 0: 28.32
+# Rank 1: 28.50
+# Rank 2: 17.66
+# Rank 3: 17.69
+# Rank 4: 18.68
+# Rank 5: 18.79
+
+## Aggregate Peak BW at 524KB:
+# Max: 28.32 + 28.50 + 17.66 + 17.69 + 18.68 + 18.79 = 129.64 GB/s

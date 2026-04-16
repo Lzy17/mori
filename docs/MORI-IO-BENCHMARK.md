@@ -12,18 +12,27 @@
   - [Write](#write)
   - [Read](#read)
 
+## Prerequisites
+
+```bash
+pip install prettytable  # Required for benchmark output tables
+```
+
 ## Benchmark Commands
 
 ```bash
 cd /path/to/mori
 export PYTHONPATH=/path/to/mori:$PYTHONPATH
-export GLOO_SOCKET_IFNAME=ens14np0  # Set to your NIC interface
+export GLOO_SOCKET_IFNAME=ens14np0  # Set to your management NIC (find with: ip route get 8.8.8.8)
 
-# Run on two nodes (replace node_rank and master_addr)
+# Run on two nodes (replace node_rank, master_addr, and host)
+# --host must be set to THIS node's own routable IP on each node
 torchrun --nnodes=2 --node_rank=0 --nproc_per_node=1 \
     --master_addr="10.194.129.65" --master_port=1234 \
     tests/python/io/benchmark.py --host="10.194.129.65"
 ```
+
+> **Note:** The `--host` parameter specifies the IP address for this node's IOEngine TCP control-plane listener. Each node must set `--host` to **its own routable IP address**, not the peer's.
 
 ## Benchmark Arguments
 

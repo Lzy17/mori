@@ -1,0 +1,40 @@
+[Gloo] Rank 0 is connected to 15 peer ranks. Expected number of connected peer ranks is : 15
+[Gloo] Rank 1 is connected to 15 peer ranks. Expected number of connected peer ranks is : 15
+[Gloo] Rank 2 is connected to 15 peer ranks. Expected number of connected peer ranks is : 15
+[Gloo] Rank 3 is connected to 15 peer ranks. Expected number of connected peer ranks is : 15
+[Gloo] Rank 4 is connected to 15 peer ranks. Expected number of connected peer ranks is : 15
+[Gloo] Rank 5 is connected to 15 peer ranks. Expected number of connected peer ranks is : 15
+[Gloo] Rank 6 is connected to 15 peer ranks. Expected number of connected peer ranks is : 15
+[Gloo] Rank 7 is connected to 15 peer ranks. Expected number of connected peer ranks is : 15
+MORI Topology detection is disabled, use static matching
+MORI Topology detection is disabled, use static matching
+MORI Topology detection is disabled, use static matching
+MORI Topology detection is disabled, use static matching
+MORI Topology detection is disabled, use static matching
+MORI Topology detection is disabled, use static matching
+MORI Topology detection is disabled, use static matching
+MORI Topology detection is disabled, use static matching
+W0415 23:17:47.994000 4179377 torch/distributed/elastic/agent/server/api.py:732] Received Signals.SIGTERM death signal, shutting down workers
+W0415 23:17:47.994000 4179377 torch/distributed/elastic/multiprocessing/api.py:906] Sending process 4179627 closing signal SIGTERM
+Traceback (most recent call last):
+  File "/opt/venv/bin/torchrun", line 33, in <module>
+    sys.exit(load_entry_point('torch==2.9.0a0+git7bcbafe', 'console_scripts', 'torchrun')())
+  File "/opt/venv/lib/python3.10/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 357, in wrapper
+    return f(*args, **kwargs)
+  File "/opt/venv/lib/python3.10/site-packages/torch/distributed/run.py", line 936, in main
+    run(args)
+  File "/opt/venv/lib/python3.10/site-packages/torch/distributed/run.py", line 927, in run
+    elastic_launch(
+  File "/opt/venv/lib/python3.10/site-packages/torch/distributed/launcher/api.py", line 151, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+  File "/opt/venv/lib/python3.10/site-packages/torch/distributed/launcher/api.py", line 279, in launch_agent
+    result = agent.run()
+  File "/opt/venv/lib/python3.10/site-packages/torch/distributed/elastic/metrics/api.py", line 138, in wrapper
+    result = f(*args, **kwargs)
+  File "/opt/venv/lib/python3.10/site-packages/torch/distributed/elastic/agent/server/api.py", line 724, in run
+    result = self._invoke_run(role)
+  File "/opt/venv/lib/python3.10/site-packages/torch/distributed/elastic/agent/server/api.py", line 888, in _invoke_run
+    time.sleep(monitor_interval)
+  File "/opt/venv/lib/python3.10/site-packages/torch/distributed/elastic/multiprocessing/api.py", line 85, in _terminate_process_handler
+    raise SignalException(f"Process {os.getpid()} got signal: {sigval}", sigval=sigval)
+torch.distributed.elastic.multiprocessing.api.SignalException: Process 4179377 got signal: 15

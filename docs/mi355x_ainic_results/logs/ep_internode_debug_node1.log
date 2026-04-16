@@ -1,0 +1,113 @@
+[Gloo] Rank 12 is connected to 15 peer ranks. Expected number of connected peer ranks is : 15
+[Gloo] Rank 14 is connected to 15 peer ranks. Expected number of connected peer ranks is : 15
+[Gloo] Rank 8 is connected to 15 peer ranks. Expected number of connected peer ranks is : 15
+[Gloo] Rank 9 is connected to 15 peer ranks. Expected number of connected peer ranks is : 15
+[Gloo] Rank 11 is connected to 15 peer ranks. Expected number of connected peer ranks is : 15
+[Gloo] Rank 10 is connected to 15 peer ranks. Expected number of connected peer ranks is : 15
+[Gloo] Rank 13 is connected to 15 peer ranks. Expected number of connected peer ranks is : 15
+[Gloo] Rank 15 is connected to 15 peer ranks. Expected number of connected peer ranks is : 15
+MORI Topology detection is disabled, use static matching
+MORI Topology detection is disabled, use static matching
+MORI Topology detection is disabled, use static matching
+MORI Topology detection is disabled, use static matching
+MORI Topology detection is disabled, use static matching
+MORI Topology detection is disabled, use static matching
+MORI Topology detection is disabled, use static matching
+MORI Topology detection is disabled, use static matching
+init process group done
+process group ok
+I'm pe 10 in 16 pes
+rank 10 recv 26748 tokens
+rank 10 recv 26748 tokens 8192 rdma tokens
+init process group done
+process group ok
+I'm pe 12 in 16 pes
+rank 12 recv 26799 tokens
+rank 12 recv 26799 tokens 8192 rdma tokens
+init process group done
+process group ok
+I'm pe 8 in 16 pes
+rank 8 recv 26757 tokens
+Node 1 Dispatch Pass
+Node 1 Combine Pass
+rank 8 recv 26757 tokens 8192 rdma tokens
+init process group done
+process group ok
+I'm pe 14 in 16 pes
+rank 14 recv 26615 tokens
+rank 14 recv 26615 tokens 8192 rdma tokens
+init process group done
+process group ok
+I'm pe 11 in 16 pes
+rank 11 recv 26682 tokens
+rank 11 recv 26682 tokens 8192 rdma tokens
+init process group done
+process group ok
+I'm pe 13 in 16 pes
+rank 13 recv 26734 tokens
+rank 13 recv 26734 tokens 8192 rdma tokens
+init process group done
+process group ok
+I'm pe 15 in 16 pes
+rank 15 recv 26738 tokens
+rank 15 recv 26738 tokens 8192 rdma tokens
+init process group done
+process group ok
+I'm pe 9 in 16 pes
+rank 9 recv 26597 tokens
+rank 9 recv 26597 tokens 8192 rdma tokens
+W0415 23:17:51.769000 37497 torch/multiprocessing/spawn.py:169] Terminating process 37562 via signal SIGTERM
+W0415 23:17:51.770000 37497 torch/multiprocessing/spawn.py:169] Terminating process 37563 via signal SIGTERM
+W0415 23:17:51.770000 37497 torch/multiprocessing/spawn.py:169] Terminating process 37567 via signal SIGTERM
+W0415 23:17:51.770000 37497 torch/multiprocessing/spawn.py:169] Terminating process 37568 via signal SIGTERM
+W0415 23:17:51.770000 37497 torch/multiprocessing/spawn.py:169] Terminating process 37569 via signal SIGTERM
+Traceback (most recent call last):
+  File "/sgl-workspace/mori/examples/ops/dispatch_combine/test_dispatch_combine_internode.py", line 1086, in <module>
+    torch.multiprocessing.spawn(
+  File "/opt/venv/lib/python3.10/site-packages/torch/multiprocessing/spawn.py", line 340, in spawn
+    return start_processes(fn, args, nprocs, join, daemon, start_method="spawn")
+  File "/opt/venv/lib/python3.10/site-packages/torch/multiprocessing/spawn.py", line 296, in start_processes
+    while not context.join():
+  File "/opt/venv/lib/python3.10/site-packages/torch/multiprocessing/spawn.py", line 215, in join
+    raise ProcessRaisedException(msg, error_index, failed_process.pid)
+torch.multiprocessing.spawn.ProcessRaisedException: 
+
+-- Process 2 terminated with the following error:
+Traceback (most recent call last):
+  File "/opt/venv/lib/python3.10/site-packages/torch/multiprocessing/spawn.py", line 90, in _wrap
+    fn(i, *args)
+  File "/sgl-workspace/mori/examples/ops/dispatch_combine/test_dispatch_combine_internode.py", line 1000, in test_dispatch_combine
+    test_case.bench_dispatch_combine(max_tokens)
+  File "/sgl-workspace/mori/examples/ops/dispatch_combine/test_dispatch_combine_internode.py", line 721, in bench_dispatch_combine
+    ) = self.run_bench_once(max_num_token, op, test_data, repeat)
+  File "/sgl-workspace/mori/examples/ops/dispatch_combine/test_dispatch_combine_internode.py", line 618, in run_bench_once
+    dist.barrier()
+  File "/opt/venv/lib/python3.10/site-packages/torch/distributed/c10d_logger.py", line 81, in wrapper
+    return func(*args, **kwargs)
+  File "/opt/venv/lib/python3.10/site-packages/torch/distributed/distributed_c10d.py", line 4825, in barrier
+    work.wait()
+RuntimeError: [/app/pytorch/third_party/gloo/gloo/transport/tcp/pair.cc:544] Connection closed by peer [10.235.24.254]:21380
+
+W0415 23:17:52.026000 37431 torch/distributed/elastic/agent/server/api.py:732] Received Signals.SIGTERM death signal, shutting down workers
+Traceback (most recent call last):
+  File "/opt/venv/bin/torchrun", line 33, in <module>
+    sys.exit(load_entry_point('torch==2.9.0a0+git7bcbafe', 'console_scripts', 'torchrun')())
+  File "/opt/venv/lib/python3.10/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 357, in wrapper
+    return f(*args, **kwargs)
+  File "/opt/venv/lib/python3.10/site-packages/torch/distributed/run.py", line 936, in main
+    run(args)
+  File "/opt/venv/lib/python3.10/site-packages/torch/distributed/run.py", line 927, in run
+    elastic_launch(
+  File "/opt/venv/lib/python3.10/site-packages/torch/distributed/launcher/api.py", line 151, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+  File "/opt/venv/lib/python3.10/site-packages/torch/distributed/launcher/api.py", line 279, in launch_agent
+    result = agent.run()
+  File "/opt/venv/lib/python3.10/site-packages/torch/distributed/elastic/metrics/api.py", line 138, in wrapper
+    result = f(*args, **kwargs)
+  File "/opt/venv/lib/python3.10/site-packages/torch/distributed/elastic/agent/server/api.py", line 724, in run
+    result = self._invoke_run(role)
+  File "/opt/venv/lib/python3.10/site-packages/torch/distributed/elastic/agent/server/api.py", line 888, in _invoke_run
+    time.sleep(monitor_interval)
+  File "/opt/venv/lib/python3.10/site-packages/torch/distributed/elastic/multiprocessing/api.py", line 85, in _terminate_process_handler
+    raise SignalException(f"Process {os.getpid()} got signal: {sigval}", sigval=sigval)
+torch.distributed.elastic.multiprocessing.api.SignalException: Process 37431 got signal: 15
