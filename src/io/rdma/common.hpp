@@ -398,6 +398,13 @@ class SubmissionLedger {
   // it also tells the CQE path that this endpoint's degraded flag is terminal.
   bool Closed() const;
 
+  // Stop admitting new WRs, without waiting for or retiring previously admitted
+  // work. Already admitted posts may still register an orphaned partial prefix.
+  // Neither this call nor AdmissionClosed() proves DMA quiescence.
+  void CloseAdmission();
+  bool AdmissionClosed() const;
+
+
  private:
   friend class PostGuard;
 
@@ -412,6 +419,9 @@ class SubmissionLedger {
   std::unordered_map<uint64_t, SubmissionRecord> records_;
   // Outstanding PostGuards. FailAll() waits for this to reach 0.
   int posting_{0};
+  // Distinct from fatal retirement: a seal must retain existing records and
+  // late orphan accounting until actual completion or verified teardown.
+  std::atomic<bool> admissionClosed_{false};
   bool closed_{false};
 };
 
@@ -478,6 +488,9 @@ struct EndpointRuntime {
   // locking NotifManager::mu on every poll. Type-erased (void*) to avoid a header
   // dependency on the NotifManager-private struct; nullptr until registered.
   std::atomic<void*> notifCtx{nullptr};
+  // A failed notification receive post is terminal for this endpoint. Keep
+  // its context and posted buffers alive while the old QP is drained.
+  std::atomic<bool> recvPostingFailed{false};
 };
 
 using EpPairVec = std::vector<EpPair>;

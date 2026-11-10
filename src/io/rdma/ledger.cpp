@@ -29,7 +29,7 @@ namespace io {
 uint64_t SubmissionLedger::Insert(int postedWr, bool hasSignaledTail,
                                   std::shared_ptr<CqCallbackMeta> meta, int batchSize) {
   std::lock_guard<std::mutex> lock(mu_);
-  if (closed_) return kInvalidRecordId;
+  if (admissionClosed_.load(std::memory_order_relaxed)) return kInvalidRecordId;
   uint64_t id = nextId_++;
   records_[id] = SubmissionRecord{
       id, postedWr, hasSignaledTail, SubmissionState::Posted, std::move(meta), batchSize};
@@ -40,7 +40,7 @@ SubmissionLedger::PostGuard SubmissionLedger::InsertForPost(int postedWr,
                                                             std::shared_ptr<CqCallbackMeta> meta,
                                                             int batchSize) {
   std::lock_guard<std::mutex> lock(mu_);
-  if (closed_) return PostGuard{};
+  if (admissionClosed_.load(std::memory_order_relaxed)) return PostGuard{};
   uint64_t id = nextId_++;
   records_[id] =
       SubmissionRecord{id, postedWr, true, SubmissionState::Posting, std::move(meta), batchSize};
@@ -104,6 +104,9 @@ int SubmissionLedger::ReleaseOrphanedByRecovery(std::atomic<int>* sqDepth) {
   int total = 0;
   {
     std::lock_guard<std::mutex> lock(mu_);
+    // A receive-post seal is not retirement proof. Preserve PR907's per-WR
+    // accounting and retain these orphan records until a proven retirement.
+    if (admissionClosed_.load(std::memory_order_relaxed)) return 0;
     // Only erase Orphaned records.  Posted records still have signaled WRs whose
     // CQEs may arrive later; they must remain so ReleaseByCqe() can update the
     // corresponding TransferStatus and release sqDepth normally.
@@ -137,6 +140,7 @@ int SubmissionLedger::FailAll(StatusCode code, const std::string& message,
     // admitted settle. Without this wait a record could be retired and its
     // postedWr subtracted while its ibv_post_send is still running, which either
     // double-releases the reservation or leaves the WR on the wire untracked.
+    admissionClosed_.store(true, kSqAdmissionOrder);
     closed_ = true;
     postingDrained_.wait(lock, [this] { return posting_ == 0; });
     for (auto& [id, rec] : records_) {
@@ -156,6 +160,17 @@ int SubmissionLedger::FailAll(StatusCode code, const std::string& message,
     meta->Account(credits, code, message);
   }
   return static_cast<int>(transfers.size());
+}
+
+void SubmissionLedger::CloseAdmission() {
+  std::lock_guard<std::mutex> lock(mu_);
+  admissionClosed_.store(true, kSqAdmissionOrder);
+}
+
+bool SubmissionLedger::AdmissionClosed() const {
+  // The SQ waiter handshake uses the same SC predicate/epoch protocol as
+  // degraded. Keep this read lock-free on the normal submission path.
+  return admissionClosed_.load(kSqAdmissionOrder);
 }
 
 bool SubmissionLedger::Closed() const {

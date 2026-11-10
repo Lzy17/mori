@@ -269,6 +269,11 @@ void NotifySqStateChanged(const EpPair& ep) {
   FutexWakeAll(&event->epoch);
 }
 
+static bool SqAdmissionClosed(const EpPair& ep) {
+  return (ep.degraded && ep.degraded->load(kSqAdmissionOrder)) ||
+         (ep.ledger && ep.ledger->AdmissionClosed());
+}
+
 static bool TryReserveSqDepthOnce(const EpPair& ep, int wrCount) {
   int observed = ep.sqDepth->load(kSqAdmissionOrder);
   while (true) {
@@ -291,9 +296,9 @@ static bool TryReserveSqDepthSpin(const EpPair& ep, int wrCount, int epId, const
       std::chrono::steady_clock::now() + std::chrono::microseconds(kBackoffTimeoutUs);
   int backoff = 0;
   while (true) {
-    if (ep.degraded && ep.degraded->load(kSqAdmissionOrder)) {
+    if (SqAdmissionClosed(ep)) {
       SetSqReserveFailureKind(failureKind, SqReserveFailureKind::Degraded);
-      if (errMsg) *errMsg = "EP is degraded, rejecting new submissions";
+      if (errMsg) *errMsg = "EP is degraded or admission is closed, rejecting new submissions";
       return false;
     }
 
@@ -325,9 +330,9 @@ static bool TryReserveSqDepthSpin(const EpPair& ep, int wrCount, int epId, const
 static bool TryReserveSqDepth(const EpPair& ep, int wrCount, int epId, const char* opTag,
                               std::string* errMsg, SqReserveFailureKind* failureKind = nullptr) {
   if (wrCount <= 0 || !ep.sqDepth) return true;
-  if (ep.degraded && ep.degraded->load(kSqAdmissionOrder)) {
+  if (SqAdmissionClosed(ep)) {
     SetSqReserveFailureKind(failureKind, SqReserveFailureKind::Degraded);
-    if (errMsg) *errMsg = "EP is degraded, rejecting new submissions";
+    if (errMsg) *errMsg = "EP is degraded or admission is closed, rejecting new submissions";
     return false;
   }
   if (wrCount > ep.maxSqDepth) {
@@ -365,9 +370,9 @@ static bool TryReserveSqDepth(const EpPair& ep, int wrCount, int epId, const cha
   while (true) {
     const uint32_t observedEpoch = event->epoch.load(kSqAdmissionOrder);
 
-    if (ep.degraded && ep.degraded->load(kSqAdmissionOrder)) {
+    if (SqAdmissionClosed(ep)) {
       SetSqReserveFailureKind(failureKind, SqReserveFailureKind::Degraded);
-      if (errMsg) *errMsg = "EP is degraded, rejecting new submissions";
+      if (errMsg) *errMsg = "EP is degraded or admission is closed, rejecting new submissions";
       return false;
     }
 

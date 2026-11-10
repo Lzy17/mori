@@ -188,6 +188,9 @@ class NotifManager {
   void Shutdown();
 
  private:
+  bool PostNotificationRecv(const std::shared_ptr<EndpointRuntime>& rt, ibv_recv_wr* wr,
+                            const char* phase);
+
   struct FlushDrainStats {
     uint64_t count{0};
     uint32_t firstQpNum{0};

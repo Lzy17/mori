@@ -214,6 +214,57 @@ void CaseSubmissionLedgerBasic() {
   Require(sqDepth2.load(std::memory_order_relaxed) == 5, "sq depth after posted CQE release");
 }
 
+void CaseSubmissionLedgerCloseAdmission() {
+  SubmissionLedger ledger(16);
+  std::atomic<int> depth{6};
+  TransferStatus statusA, statusB;
+  statusA.SetCode(StatusCode::IN_PROGRESS);
+  statusB.SetCode(StatusCode::IN_PROGRESS);
+  auto metaA = std::make_shared<CqCallbackMeta>(&statusA, 701, 1);
+  auto metaB = std::make_shared<CqCallbackMeta>(&statusB, 702, 1);
+  auto guard = ledger.InsertForPost(2, metaA, 1);
+  Require(static_cast<bool>(guard), "initial guard must be admitted");
+  const auto idA = guard.RecordId();
+  const auto idB = ledger.Insert(4, true, metaB, 1);
+
+  // Closing while a guard is outstanding must neither wait for it nor claim
+  // its status. This is the receive-failure operation, not FailAll().
+  ledger.CloseAdmission();
+  ledger.CloseAdmission();
+  Require(ledger.AdmissionClosed(), "admission seal must be monotonic");
+  Require(!ledger.Closed(), "admission seal must not imply fatal retirement");
+  Require(statusA.InProgress() && statusB.InProgress(), "seal must not report completion");
+  Require(depth.load() == 6, "seal must not return posted SQ credits");
+  Require(metaA->status.load() == &statusA && metaB->status.load() == &statusB,
+          "seal must preserve completion ownership");
+  auto refused = ledger.InsertForPost(1, metaA, 1);
+  Require(!refused, "no new guard after admission closes");
+  Require(ledger.Insert(1, true, metaA, 1) == SubmissionLedger::kInvalidRecordId,
+          "unguarded new insertion must also be refused");
+  guard.MarkPosted();
+  guard.Commit();
+  int batch = 0;
+  Require(ledger.ReleaseByCqe(idA, &depth, &batch) == metaA,
+          "an admitted post must remain available to its later CQE");
+  Require(depth.load() == 4, "CQ release must return exactly its own credits");
+  Require(ledger.ReleaseByCqe(idB, &depth, &batch) == metaB,
+          "older posted record must survive the admission seal");
+  Require(depth.load() == 0, "both real completion-accounting events drain credits");
+
+  // A post admitted before closure can return a partial unsignaled prefix
+  // afterwards. Its accounting must be accepted and retained, not discarded.
+  SubmissionLedger partial(16);
+  auto posting = partial.InsertForPost(3, metaA, 1);
+  partial.CloseAdmission();
+  posting.Commit();  // no signaled tail posted
+  Require(partial.InsertOrphaned(2, metaA, 1), "retain a pre-admitted partial prefix");
+  std::atomic<int> partialDepth{2};
+  Require(partial.ReleaseOrphanedByRecovery(&partialDepth) == 0,
+          "old recovery must not retire a sealed orphan");
+  Require(partial.HasOrphaned() && partialDepth.load() == 2 && statusA.InProgress(),
+          "orphan accounting and status wait for actual retirement proof");
+}
+
 void CaseSubmissionLedgerFailAll() {
   constexpr uint32_t kNotifPerQp = 16;
   SubmissionLedger ledger(kNotifPerQp);
@@ -682,6 +733,37 @@ void CaseSqAdmissionDegradedWakesWaiter() {
   Require(wakeMs < 1000, "reserve should wake promptly after degraded notification");
   Require(ep.sqAdmission->waiters.load(kSqAdmissionOrder) == 0,
           "waiter count should be cleared after degraded wake");
+}
+
+void CaseSqAdmissionClosedLedgerWakesWaiter() {
+  EpPair ep = MakeSqAdmissionEp(1, 1);
+  ep.ledger = std::make_shared<SubmissionLedger>(16);
+  bool reserved = true;
+  std::string err;
+  std::thread worker([&] { reserved = detail::TryReserveSqDepthForTesting(ep, 1, &err); });
+  const bool waiting = WaitForSqAdmissionWaiter(ep);
+  const auto notified = std::chrono::steady_clock::now();
+  ep.ledger->CloseAdmission();
+  ep.degraded->store(true, kSqAdmissionOrder);
+  // Force the exact stale CQ recovery outcome: clearing degraded cannot reopen
+  // the old endpoint once its independent admission seal is visible.
+  ep.degraded->store(false, kSqAdmissionOrder);
+  NotifySqStateChanged(ep);
+  worker.join();
+  const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                      std::chrono::steady_clock::now() - notified).count();
+  Require(waiting, "worker must actually enter the SQ wait");
+  Require(!reserved && ms < 1000, "sealed SQ waiter must reject promptly");
+  Require(err.find("closed") != std::string::npos, "rejection must identify closed admission");
+  Require(ep.sqDepth->load() == 1 && ep.sqAdmission->waiters.load() == 0,
+          "closed admission must not consume or leak credits/waiter registration");
+  ep.sqDepth->store(0);
+  Require(!detail::TryReserveSqDepthForTesting(ep, 1, &err),
+          "even free SQ capacity must not reopen a sealed endpoint");
+  EpPair healthy = MakeSqAdmissionEp(1, 0);
+  healthy.ledger = std::make_shared<SubmissionLedger>(16);
+  Require(detail::TryReserveSqDepthForTesting(healthy, 1, &err),
+          "a separate healthy endpoint must retain admission");
 }
 
 void CaseSqAdmissionNegativeDepthReserveRepairsCounter() {
@@ -2279,6 +2361,7 @@ int main(int argc, char* argv[]) {
   SetLogLevel("info");
   std::vector<TestCase> cases = {
       {"submission_ledger_basic", CaseSubmissionLedgerBasic},
+      {"submission_ledger_close_admission", CaseSubmissionLedgerCloseAdmission},
       {"submission_ledger_fail_all", CaseSubmissionLedgerFailAll},
       {"transfer_failure_waits_for_every_qp", CaseTransferFailureWaitsForEveryQp},
       {"submission_ledger_closed_after_fail_all", CaseSubmissionLedgerClosedAfterFailAll},
@@ -2288,6 +2371,7 @@ int main(int argc, char* argv[]) {
       {"async_event_scope_matching", CaseAsyncEventScopeMatching},
       {"sq_admission_release_wakes_waiter", CaseSqAdmissionReleaseWakesWaiter},
       {"sq_admission_degraded_wakes_waiter", CaseSqAdmissionDegradedWakesWaiter},
+      {"sq_admission_closed_ledger_wakes_waiter", CaseSqAdmissionClosedLedgerWakesWaiter},
       {"sq_admission_negative_depth_reserve_repairs_counter",
        CaseSqAdmissionNegativeDepthReserveRepairsCounter},
       {"sq_admission_missing_event_falls_back", CaseSqAdmissionMissingEventFallsBack},

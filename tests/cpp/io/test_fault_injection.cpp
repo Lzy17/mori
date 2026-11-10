@@ -260,6 +260,7 @@ constexpr int kChildTimeoutMs = 90000;
 constexpr int kInitiatorGpu = 0;
 constexpr const char* kInitiatorKey = "fault_initiator";
 constexpr const char* kTargetKey = "fault_target";
+constexpr const char* kOtherKey = "fault_other";
 
 constexpr int kExitPass = 0;
 constexpr int kExitFail = 1;
@@ -475,6 +476,7 @@ int ServeTarget(const Entry& e, int fd) {
   const int gpu = TargetGpu();
   auto engine = MakeEngine(kTargetKey, e);
   GpuBuffer buf(engine.get(), gpu);
+  std::unique_ptr<GpuBuffer> otherBuf;
   std::string msg;
   if (!SendMsg(fd, Pack(engine->GetEngineDesc())) || !SendMsg(fd, Pack(buf.desc)) ||
       !RecvMsg(fd, &msg, kSetupMs)) {
@@ -488,7 +490,21 @@ int ServeTarget(const Entry& e, int fd) {
     std::string cmd;
     in >> cmd;
     std::string reply = "ok";
-    if (cmd == "fill") {
+    if (cmd == "other_setup") {
+      std::string desc;
+      if (!RecvMsg(fd, &desc, kSetupMs)) return kExitFail;
+      engine->RegisterRemoteEngine(Unpack<EngineDesc>(desc));
+      otherBuf = std::make_unique<GpuBuffer>(engine.get(), gpu);
+      if (!SendMsg(fd, Pack(otherBuf->desc))) return kExitFail;
+      continue;
+    } else if (cmd == "other_fill") {
+      int pattern = 0; in >> pattern;
+      if (!otherBuf) return kExitFail;
+      otherBuf->Fill(pattern);
+    } else if (cmd == "other_check") {
+      int pattern = 0; in >> pattern;
+      reply = otherBuf && otherBuf->Holds(Op::Write, pattern) ? "ok" : "no";
+    } else if (cmd == "fill") {
       int pattern = 0;
       in >> pattern;
       buf.Fill(pattern);
@@ -496,7 +512,7 @@ int ServeTarget(const Entry& e, int fd) {
       int op = 0, pattern = 0;
       in >> op >> pattern;
       reply = buf.Holds(static_cast<Op>(op), pattern) ? "ok" : "no";
-    } else if (cmd == "told") {
+    } else if (cmd == "told" || cmd == "other_told") {
       TransferUniqueId id = 0;
       int ms = 0;
       in >> id >> ms;
@@ -504,7 +520,7 @@ int ServeTarget(const Entry& e, int fd) {
       auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(ms);
       do {
         TransferStatus inbound;
-        if (engine->PopInboundTransferStatus(kInitiatorKey, id, &inbound)) {
+        if (engine->PopInboundTransferStatus(cmd == "other_told" ? kOtherKey : kInitiatorKey, id, &inbound)) {
           reply = "ok";
           break;
         }
@@ -564,7 +580,8 @@ class PeerRig {
     if (!RecvMsg(fd_, &engineDesc, kSetupMs) || !RecvMsg(fd_, &memDesc, kSetupMs)) {
       throw std::runtime_error("the target process did not start");
     }
-    engine_->RegisterRemoteEngine(Unpack<EngineDesc>(engineDesc));
+    targetEngineDesc_ = Unpack<EngineDesc>(engineDesc);
+    engine_->RegisterRemoteEngine(targetEngineDesc_);
     remote_ = Unpack<MemoryDesc>(memDesc);
     if (!SendMsg(fd_, Pack(engine_->GetEngineDesc())) || !RecvMsg(fd_, &hello, kSetupMs)) {
       throw std::runtime_error("the target process did not finish setup");
@@ -575,6 +592,46 @@ class PeerRig {
     std::printf("    topology: initiator GPU %d %s -> target pid %d GPU %s %s (%s)\n",
                 kInitiatorGpu, initiatorNic.c_str(), static_cast<int>(pid_), targetGpu.c_str(),
                 targetNic.c_str(), initiatorNic == targetNic ? "same NIC" : "cross-NIC");
+  }
+
+  // Separate engine identity, QP/session, source MR and receiver destination MR.
+  // Both peers share the exact same target IOEngine and process. No teardown or
+  // safe-free claim: every status/MR stays alive until this child exits.
+  void SetupOther() {
+    otherEngine_ = MakeEngine(kOtherKey, entry_);
+    otherLocal_ = std::make_unique<GpuBuffer>(otherEngine_.get(), kInitiatorGpu);
+    otherEngine_->RegisterRemoteEngine(targetEngineDesc_);
+    std::string desc;
+    if (!SendMsg(fd_, "other_setup") || !SendMsg(fd_, Pack(otherEngine_->GetEngineDesc())) ||
+        !RecvMsg(fd_, &desc, kSetupMs)) throw std::runtime_error("other peer setup failed");
+    otherRemote_ = Unpack<MemoryDesc>(desc);
+  }
+
+  bool OtherWrites(const char* phase) {
+    bool good = true;
+    for (int i = 0; i < 5; ++i) {
+      otherTransfers_.push_back(std::make_unique<Transfer>());
+      Transfer* t = otherTransfers_.back().get();
+      t->id = otherEngine_->AllocateTransferUniqueId();
+      t->pattern = static_cast<int>(otherTransfers_.size() % 250 + 1);
+      otherLocal_->Fill(t->pattern);
+      auto fill = Ask("other_fill 0");
+      if (!fill || *fill != "ok") { good = false; break; }
+      otherEngine_->Write(otherLocal_->desc, 0, otherRemote_, 0, kBufBytes, &t->status, t->id);
+      const auto code = t->status.WaitFor(kDeadlineMs);
+      bool bytes = false, notified = false;
+      if (code == StatusCode::SUCCESS) {
+        auto check = Ask("other_check " + std::to_string(t->pattern));
+        bytes = check && *check == "ok";
+        auto told = Ask("other_told " + std::to_string(t->id) + " " + std::to_string(kDeadlineMs), kDeadlineMs + kRpcMs);
+        notified = told && *told == "ok";
+      }
+      std::printf("HEALTHY_OTHER phase=%s sample=%d code=%s bytes=%d notified=%d\n",
+                  phase, i, CodeName(code), bytes, notified);
+      if (code != StatusCode::SUCCESS || !bytes || !notified) { good = false; break; }
+    }
+    std::printf("HEALTHY_OTHER phase=%s pass=%d\n", phase, good);
+    return good;
   }
 
   // Starts one transfer with a fresh data pattern in its source and zeros in its destination.
@@ -761,6 +818,11 @@ class PeerRig {
   std::unique_ptr<IOEngine> engine_;
   std::unique_ptr<GpuBuffer> local_;
   MemoryDesc remote_{};
+  EngineDesc targetEngineDesc_{};
+  std::unique_ptr<IOEngine> otherEngine_;
+  std::unique_ptr<GpuBuffer> otherLocal_;
+  MemoryDesc otherRemote_{};
+  std::vector<std::unique_ptr<Transfer>> otherTransfers_;
   std::optional<IOEngineSession> session_;
   std::vector<std::unique_ptr<Transfer>> transfers_;  // MORI keeps pointers to their statuses
 };
@@ -778,6 +840,14 @@ int RunEntry(const Entry& e) {
     }
   }
 
+  const char* otherEnv = std::getenv("MORI_IO_TEST_HEALTHY_OTHER_PEER");
+  const bool testOther = otherEnv && std::string(otherEnv) == "1" &&
+                         (e.id == "post_recv_fail.repost" || e.id == "none.write");
+  if (testOther) {
+    if (!e.notify) throw std::runtime_error("healthy peer diagnostic requires notifications");
+    rig.SetupOther();
+    if (!rig.OtherWrites("warm")) return kExitFail;
+  }
   const bool faulted = !e.rule.empty();
   if (faulted) rig.Arm(e.rule);
 
@@ -835,6 +905,14 @@ int RunEntry(const Entry& e) {
     return kExitFail;
   }
 
+  if (testOther) {
+    std::string otherWhy;
+    const bool target = rig.TargetAlive(&otherWhy);
+    std::printf("HEALTHY_OTHER faulted=%d fired=%llu target=%d\n", faulted,
+                static_cast<unsigned long long>(fired.value_or(0)), target);
+    if (target) rig.OtherWrites("after-fault");
+    else std::printf("HEALTHY_OTHER phase=after-fault blocked=dead_target pass=0\n");
+  }
   if (e.peerFailure == "LOCAL_PORT_DOWN") rig.SessionAlive(true);
   bool recovers = rig.Completes(rig.Start(e.op), &why) && rig.SessionAlive(false);
   if (!recovers) std::printf("    after the fault cleared: %s\n", why.c_str());

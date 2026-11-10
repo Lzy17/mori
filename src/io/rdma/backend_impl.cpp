@@ -44,6 +44,15 @@
 namespace mori {
 namespace io {
 
+namespace {
+// Only this setup failure is translated into a transfer status. Configuration,
+// protocol and programming errors retain their existing exception behavior.
+class NotificationRecvPostError : public std::runtime_error {
+ public:
+  using std::runtime_error::runtime_error;
+};
+}  // namespace
+
 static void ValidateRdmaNotificationConfig(const RdmaBackendConfig& config) {
   if (config.enableNotification && config.notifPerQp == 0) {
     MORI_IO_ERROR(
@@ -841,6 +850,40 @@ NotifManager::NotifManager(RdmaManager* rdmaMgr, const RdmaBackendConfig& cfg)
 
 NotifManager::~NotifManager() { Shutdown(); }
 
+bool NotifManager::PostNotificationRecv(const std::shared_ptr<EndpointRuntime>& rt,
+                                         ibv_recv_wr* wr, const char* phase) {
+  if (rt->recvPostingFailed.load(std::memory_order_acquire)) return false;
+
+  ibv_recv_wr* bad = nullptr;
+  const int rc = Verbs().PostRecv(rt->ep.local.ibvHandle.qp, wr, &bad);
+  if (rc == 0) return true;
+
+  // ibv_post_recv returns the error number itself; errno need not be set.
+  const int error = rc > 0 ? rc : (errno != 0 ? errno : EIO);
+  rt->recvPostingFailed.store(true, std::memory_order_release);
+  if (rt->ep.ledger) rt->ep.ledger->CloseAdmission();
+  if (rt->ep.degraded) rt->ep.degraded->store(true, kSqAdmissionOrder);
+  NotifySqStateChanged(rt->ep);
+  rdma->RecordQpFailed(rt->ep);
+  MORI_IO_ERROR("notification {} post failed: eid={} qpn={} error={} ({}); "
+                "endpoint will not accept new transfers",
+                phase, rt->id, rt->ep.local.handle.qpn, error, strerror(error));
+
+  // Stop new traffic on this QP, but do not manufacture a terminal transfer
+  // status or free receive storage. The normal CQ path still owns retirement
+  // of previously posted work. Moving to ERR alone is not a DMA-drain proof.
+  ibv_qp_attr attr{};
+  attr.qp_state = IBV_QPS_ERR;
+  const int errRc = ibv_modify_qp(rt->ep.local.ibvHandle.qp, &attr, IBV_QP_STATE);
+  if (errRc != 0) {
+    const int errError = errRc > 0 ? errRc : (errno != 0 ? errno : EIO);
+    MORI_IO_ERROR("notification receive failure: QP ERR transition failed: "
+                  "eid={} qpn={} error={} ({})",
+                  rt->id, rt->ep.local.handle.qpn, errError, strerror(errError));
+  }
+  return false;
+}
+
 void NotifManager::RegisterEndpoint(const std::shared_ptr<EndpointRuntime>& rt) {
   if (config.pollCqMode == PollCqMode::EVENT) {
     epoll_event ev;
@@ -891,8 +934,10 @@ void NotifManager::RegisterEndpoint(const std::shared_ptr<EndpointRuntime>& rt) 
     wr.sg_list = &sge;
     wr.num_sge = 1;
 
-    struct ibv_recv_wr* bad = nullptr;
-    SYSCALL_RETURN_ZERO(Verbs().PostRecv(qp, &wr, &bad));
+    if (!PostNotificationRecv(rt, &wr, "initial")) {
+      throw NotificationRecvPostError("notification receive setup failed for endpoint " +
+                               std::to_string(rt->id));
+    }
   }
 }
 
@@ -978,7 +1023,8 @@ NotifManager::FlushDrainStats NotifManager::ProcessOneCqe(
           // A closed ledger means a fatal async event already retired this
           // endpoint, so its degraded flag is terminal rather than the
           // partial-post kind this path recovers from.
-          if (ep.degraded && ep.degraded->load(kSqAdmissionOrder) && ep.ledger &&
+          if (!rt->recvPostingFailed.load(std::memory_order_acquire) && ep.degraded &&
+              ep.degraded->load(kSqAdmissionOrder) && ep.ledger &&
               !ep.ledger->Closed()) {
             const int orphanedReleased = ep.ledger->ReleaseOrphanedByRecovery(ep.sqDepth.get());
             ep.degraded->store(false, kSqAdmissionOrder);
@@ -1048,8 +1094,9 @@ NotifManager::FlushDrainStats NotifManager::ProcessOneCqe(
         wr.wr_id = idx;
         wr.sg_list = &sge;
         wr.num_sge = 1;
-        struct ibv_recv_wr* bad = nullptr;
-        SYSCALL_RETURN_ZERO(Verbs().PostRecv(ep.local.ibvHandle.qp, &wr, &bad));
+        // A receive-post failure must not kill the CQ thread or the process.
+        // Other endpoints and completions in this batch still need progress.
+        (void)PostNotificationRecv(rt, &wr, "repost");
       } else if (wc[i].opcode == IBV_WC_SEND) {
         if (!IsNotifSendWrId(wc[i].wr_id)) {
           MORI_IO_WARN(
@@ -1831,7 +1878,16 @@ void RdmaBackend::ReadWrite(const MemoryDesc& localDest, size_t localOffset,
                             const MemoryDesc& remoteSrc, size_t remoteOffset, size_t size,
                             TransferStatus* status, TransferUniqueId id, bool isRead) {
   MORI_IO_FUNCTION_TIMER;
-  RdmaBackendSession* sess = GetOrCreateSessionCached(localDest, remoteSrc);
+  RdmaBackendSession* sess = nullptr;
+  try {
+    sess = GetOrCreateSessionCached(localDest, remoteSrc);
+  } catch (const NotificationRecvPostError& e) {
+    // Session setup precedes submission: no WR for this call has been posted.
+    // This does not retire or release any older transfer on the endpoint.
+    if (status == nullptr) throw;
+    status->Update(StatusCode::ERR_RDMA_OP, e.what());
+    return;
+  }
   sess->ReadWrite(localOffset, remoteOffset, size, status, id, isRead);
 }
 
@@ -1848,14 +1904,23 @@ void RdmaBackend::BatchReadWrite(const MemoryDesc& localDest, const SizeVec& loc
     return;
   }
 
-  RdmaBackendSession* sess = GetOrCreateSessionCached(localDest, remoteSrc);
+  RdmaBackendSession* sess = nullptr;
+  try {
+    sess = GetOrCreateSessionCached(localDest, remoteSrc);
+  } catch (const NotificationRecvPostError& e) {
+    // Session setup precedes submission: no WR for this call has been posted.
+    // This does not retire or release any older transfer on the endpoint.
+    if (status == nullptr) throw;
+    status->Update(StatusCode::ERR_RDMA_OP, e.what());
+    return;
+  }
   sess->BatchReadWrite(localOffsets, remoteOffsets, sizes, status, id, isRead);
 }
 
 BackendSession* RdmaBackend::CreateSession(const MemoryDesc& local, const MemoryDesc& remote) {
-  RdmaBackendSession* sess = new RdmaBackendSession();
+  auto sess = std::make_unique<RdmaBackendSession>();
   CreateSession(local, remote, *sess);
-  return sess;
+  return sess.release();
 }
 
 namespace {
