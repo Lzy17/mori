@@ -400,6 +400,8 @@ int FaultInjector::PostRecv(ibv_qp* qp, ibv_recv_wr* wr, ibv_recv_wr** bad) {
 }
 
 int FaultInjector::PollCq(ibv_cq* cq, int numEntries, ibv_wc* wc) try {
+  std::lock_guard<std::mutex> gate(completionGateMu_);
+  if (holdCompletions_) return 0;
   if (hasDeadResources_.load(std::memory_order_relaxed)) {
     std::lock_guard<std::mutex> lock(mu_);
     if (deadCqs_.count(cq) || deadDevices_.count(cq->context)) return 0;

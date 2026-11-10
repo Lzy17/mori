@@ -732,6 +732,25 @@ class PeerRig {
 
 // Prints "RESULT ends= honest= recovers= target= reported= during= waits=" for the runner,
 // each 1 (passed), 0 (failed) or -1 (the entry does not ask for the check).
+// Owns only the initiator test process completion barrier. DMA and CQEs are
+// real; no CQE is fabricated or discarded. After release the ordinary provider
+// poll and software ledger retire the submitted data before terminal status.
+class ScopedCompletionHold {
+ public:
+  explicit ScopedCompletionHold(bool enabled) : enabled_(enabled) {
+    if (enabled_) FaultInjector::Instance().HoldCompletionsForTest(true);
+  }
+  ~ScopedCompletionHold() { Release(); }
+  void Release() {
+    if (enabled_) {
+      FaultInjector::Instance().HoldCompletionsForTest(false);
+      enabled_ = false;
+    }
+  }
+ private:
+  bool enabled_;
+};
+
 int RunEntry(const Entry& e) {
   ApplyEnv(e);
   PeerRig rig(e);
@@ -744,14 +763,22 @@ int RunEntry(const Entry& e) {
   }
 
   const bool faulted = !e.rule.empty();
+  if (e.waits && (e.side != Side::Initiator || !faulted ||
+                  ParseFaultRule(e.rule).kind != FaultKind::PostSendFail)) {
+    throw std::invalid_argument("waits requires an initiator post_send_fail rule");
+  }
+  ScopedCompletionHold completionHold(e.waits);
   if (faulted) rig.Arm(e.rule);
 
   Transfer* t = rig.Start(e.op);
-  // Read right away: a 1 MiB transfer is still on the wire microseconds after the call.
+  // A transfer can already have completed when an asynchronous call returns.
+  // For waits entries, the barrier instead guarantees its real data CQEs have
+  // not been consumed; terminal status must await that software retirement.
   StatusCode atReturn = t->status.Code();
   int waits = e.waits ? atReturn == StatusCode::IN_PROGRESS : -1;
+  completionHold.Release();
   if (waits == 0) {
-    std::printf("    the call returned %s while its data WRs were still on the wire\n",
+    std::printf("    the call returned %s while its data CQEs were deliberately held\n",
                 CodeName(atReturn));
   }
   StatusCode code = t->status.WaitFor(kDeadlineMs);

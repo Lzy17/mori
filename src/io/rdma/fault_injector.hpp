@@ -98,6 +98,14 @@ class FaultInjector final : public VerbsOps {
   void ForgetAsyncEndpoint(ibv_context* ctx, uint32_t qpn, ibv_cq* cq) noexcept override;
   void BeforeNotify(ibv_qp* qp, TransferStatus* status) noexcept override;
 
+  // Test-only barrier: leave actual CQEs queued in the NIC until released.
+  // Serializes with PollCq so a subsequently submitted WR cannot be retired
+  // by a provider poll that entered before the hold was established.
+  void HoldCompletionsForTest(bool hold) {
+    std::lock_guard<std::mutex> lock(completionGateMu_);
+    holdCompletions_ = hold;
+  }
+
  private:
   FaultInjector();
   // True if the armed rule matches and is due; `value` gets the rule's value.
@@ -128,6 +136,8 @@ class FaultInjector final : public VerbsOps {
     int durationMs;  // zero = port_down; positive = flap, even before publication
   };
 
+  std::mutex completionGateMu_;
+  bool holdCompletions_{false};
   RealVerbs real_;
   std::atomic<bool> armed_{false};
   std::atomic<uint64_t> fired_{0};
